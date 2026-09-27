@@ -29,8 +29,11 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y bc bison build-essential ca-certificates cpio curl debhelper debootstrap dpkg-dev dwarves fakeroot file flex git grub-common grub-efi-amd64-bin grub-pc-bin initramfs-tools libelf-dev libssl-dev live-build make mtools qemu-system-x86 rsync sudo xorriso
 
-      - name: Install current Debian live-build
+      - name: Install Debian Trixie archive keyring and live-build
         run: |
+          curl --fail --location --retry 3 https://deb.debian.org/debian/pool/main/d/debian-archive-keyring/debian-archive-keyring_2025.1_all.deb --output /tmp/debian-archive-keyring.deb
+          printf '%s  %s\n' 9ea7778e443144ca490668737a8ab22dd3e748bb99e805e22ec055abeb3c7fac /tmp/debian-archive-keyring.deb | sha256sum --check
+          sudo dpkg --install /tmp/debian-archive-keyring.deb
           curl --fail --location --retry 3 https://deb.debian.org/debian/pool/main/l/live-build/live-build_20250505+deb13u1_all.deb --output /tmp/live-build.deb
           printf '%s  %s\n' 58e09779881cbcc631c49ceb703413e0247a87db01823e597b2a1c40a2afd8f4 /tmp/live-build.deb | sha256sum --check
           sudo dpkg --install /tmp/live-build.deb

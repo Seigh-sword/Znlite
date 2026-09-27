@@ -33,7 +33,23 @@ jobs:
         run: ./scripts/check.sh
 
       - name: Build text-only live image and custom kernel package
-        run: JOBS=2 ./scripts/build.sh
+        shell: bash
+        run: |
+          set -o pipefail
+          mkdir -p build
+          JOBS=2 ./scripts/build.sh 2>&1 | tee build/build.log
+
+      - name: Report failure diagnostics
+        if: failure()
+        shell: bash
+        run: |
+          for log_file in build/build.log build/output/qemu-boot.log; do
+            if [ -f "$log_file" ]; then
+              tail -n 30 "$log_file" | while IFS= read -r line; do
+                printf '::error title=Build diagnostic::%s\n' "${line:0:500}"
+              done
+            fi
+          done
 
       - name: Smoke test BIOS boot in QEMU
         run: ./scripts/smoke-test.sh

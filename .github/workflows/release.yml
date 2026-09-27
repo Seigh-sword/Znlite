@@ -55,25 +55,6 @@ jobs:
           mkdir -p build
           JOBS=2 ./scripts/build.sh 2>&1 | tee build/build.log
 
-      - name: Report failure diagnostics
-        if: failure()
-        shell: bash
-        run: |
-          for log_file in build/check.log build/build.log build/output/qemu-boot.log; do
-            if [ -f "$log_file" ]; then
-              snippet=$(tail -n 100 "$log_file" | sed ':a;N;$!ba;s/\n/ | /g')
-              for start in 0 3000 6000 9000; do
-                part=${snippet:start:3000}
-                if [ -n "$part" ]; then
-                  printf '::error title=Build diagnostic part %s::%s\n' "$((start / 3000 + 1))" "$part"
-                fi
-              done
-            fi
-          done
-
-      - name: Smoke test BIOS boot in QEMU
-        run: ./scripts/smoke-test.sh
-
       - name: Verify kernel package metadata
         run: |
           test "$(dpkg-deb --field build/output/znlite-kernel-6.12.111-amd64.deb Version)" = "6.12.111-1"
@@ -92,3 +73,22 @@ jobs:
             build/dl/v6.12.111.tar.gz.sha256
           if-no-files-found: error
           retention-days: 30
+
+      - name: Smoke test BIOS boot in QEMU
+        run: ./scripts/smoke-test.sh
+
+      - name: Report failure diagnostics
+        if: failure()
+        shell: bash
+        run: |
+          for log_file in build/check.log build/build.log build/output/qemu-boot.log; do
+            if [ -f "$log_file" ]; then
+              snippet=$(tail -n 100 "$log_file" | sed ':a;N;$!ba;s/\n/ | /g')
+              for start in 0 3000 6000 9000 12000 15000; do
+                part=${snippet:start:3000}
+                if [ -n "$part" ]; then
+                  printf '::error title=Build diagnostic part %s::%s\n' "$((start / 3000 + 1))" "$part"
+                fi
+              done
+            fi
+          done

@@ -45,9 +45,8 @@ jobs:
         run: |
           for log_file in build/build.log build/output/qemu-boot.log; do
             if [ -f "$log_file" ]; then
-              tail -n 30 "$log_file" | while IFS= read -r line; do
-                printf '::error title=Build diagnostic::%s\n' "${line:0:500}"
-              done
+              snippet=$(tail -n 100 "$log_file" | sed ':a;N;$!ba;s/\n/ | /g')
+              printf '::error title=Build diagnostic::%s\n' "${snippet:0:60000}"
             fi
           done
 

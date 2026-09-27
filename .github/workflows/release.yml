@@ -12,15 +12,8 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-24.04
-    container:
-      image: debian:trixie
     timeout-minutes: 180
     steps:
-      - name: Install build dependencies
-        run: |
-          apt-get update
-          DEBIAN_FRONTEND=noninteractive apt-get install -y bc bison build-essential ca-certificates cpio curl debhelper dpkg-dev dwarves fakeroot file flex git grub-common grub-efi-amd64-bin grub-pc-bin initramfs-tools libelf-dev libssl-dev live-build make mtools nodejs qemu-system-x86 rsync sudo xorriso
-
       - name: Check out Znlite
         uses: actions/checkout@v4
 
@@ -30,6 +23,18 @@ jobs:
           path: build/dl
           key: znlite-linux-6.12.111-${{ runner.os }}
           restore-keys: znlite-linux-6.12.111-${{ runner.os }}-
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y bc bison build-essential ca-certificates cpio curl debhelper debootstrap dpkg-dev dwarves fakeroot file flex git grub-common grub-efi-amd64-bin grub-pc-bin initramfs-tools libelf-dev libssl-dev live-build make mtools qemu-system-x86 rsync sudo xorriso
+
+      - name: Install current Debian live-build
+        run: |
+          curl --fail --location --retry 3 https://deb.debian.org/debian/pool/main/l/live-build/live-build_20250505+deb13u1_all.deb --output /tmp/live-build.deb
+          printf '%s  %s\n' 58e09779881cbcc631c49ceb703413e0247a87db01823e597b2a1c40a2afd8f4 /tmp/live-build.deb | sha256sum --check
+          sudo dpkg --install /tmp/live-build.deb
+          lb --version
 
       - name: Trust checkout directory
         run: git config --global --add safe.directory "$GITHUB_WORKSPACE"

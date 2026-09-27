@@ -33,42 +33,45 @@ if [ ! -f "$KERNEL_SOURCE/Makefile" ]; then
     tar --extract --gzip --file "$KERNEL_ARCHIVE" --strip-components=1 --directory "$KERNEL_SOURCE" --no-same-owner
 fi
 make -C "$KERNEL_SOURCE" ARCH=x86 x86_64_defconfig
-"$KERNEL_SOURCE/scripts/config" \
-    --disable HIBERNATION \
-    --disable KEXEC \
-    --disable CRASH_DUMP \
-    --disable DEBUG_KERNEL \
-    --disable DEBUG_INFO \
-    --disable DEBUG_INFO_BTF \
-    --disable DEBUG_INFO_DWARF5 \
-    --disable FTRACE \
-    --disable KPROBES \
-    --disable KUNIT \
-    --disable KVM \
-    --disable KVM_GUEST \
-    --disable HYPERVISOR_GUEST \
-    --disable PARAVIRT \
-    --disable NET_9P \
-    --disable NETFILTER \
-    --disable VIRTIO_PCI \
-    --disable VIRTIO_BLK \
-    --disable SCSI_VIRTIO \
-    --disable VIRTIO_NET \
-    --disable VIRTIO_CONSOLE \
-    --disable VIRTIO_BALLOON \
-    --disable VIRTIO_INPUT \
-    --disable VIRTIO_MMIO \
-    --disable VIRTIO_MMIO_CMDLINE_DEVICES \
-    --disable DRM_VIRTIO_GPU \
-    --disable DRM_QXL \
-    --disable DRM_BOCHS \
-    --disable NET_9P_VIRTIO \
-    --disable PM_DEBUG \
-    --disable CPU_FREQ_DEFAULT_GOV_USERSPACE \
-    --enable HZ_250
-ARCH=x86 "$KERNEL_SOURCE/scripts/kconfig/merge_config.sh" -m "$KERNEL_SOURCE/.config" "$ROOT/kernel/znlite.fragment"
-"$KERNEL_SOURCE/scripts/config" --set-str LOCALVERSION "-znlite"
-make -C "$KERNEL_SOURCE" ARCH=x86 olddefconfig
+(
+    cd "$KERNEL_SOURCE"
+    ./scripts/config \
+        --disable HIBERNATION \
+        --disable KEXEC \
+        --disable CRASH_DUMP \
+        --disable DEBUG_KERNEL \
+        --disable DEBUG_INFO \
+        --disable DEBUG_INFO_BTF \
+        --disable DEBUG_INFO_DWARF5 \
+        --disable FTRACE \
+        --disable KPROBES \
+        --disable KUNIT \
+        --disable KVM \
+        --disable KVM_GUEST \
+        --disable HYPERVISOR_GUEST \
+        --disable PARAVIRT \
+        --disable NET_9P \
+        --disable NETFILTER \
+        --disable VIRTIO_PCI \
+        --disable VIRTIO_BLK \
+        --disable SCSI_VIRTIO \
+        --disable VIRTIO_NET \
+        --disable VIRTIO_CONSOLE \
+        --disable VIRTIO_BALLOON \
+        --disable VIRTIO_INPUT \
+        --disable VIRTIO_MMIO \
+        --disable VIRTIO_MMIO_CMDLINE_DEVICES \
+        --disable DRM_VIRTIO_GPU \
+        --disable DRM_QXL \
+        --disable DRM_BOCHS \
+        --disable NET_9P_VIRTIO \
+        --disable PM_DEBUG \
+        --disable CPU_FREQ_DEFAULT_GOV_USERSPACE \
+        --enable HZ_250
+    ARCH=x86 ./scripts/kconfig/merge_config.sh -m .config "$ROOT/kernel/znlite.fragment"
+    ./scripts/config --set-str LOCALVERSION "-znlite"
+    make ARCH=x86 olddefconfig
+)
 KERNEL_RELEASE=$(make -s -C "$KERNEL_SOURCE" ARCH=x86 kernelrelease)
 if [ "$KERNEL_RELEASE" != "$KERNEL_VERSION-znlite" ]; then
     printf 'Unexpected kernel release string: %s\n' "$KERNEL_RELEASE" >&2

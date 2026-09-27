@@ -12,8 +12,15 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-24.04
+    container:
+      image: debian:trixie
     timeout-minutes: 180
     steps:
+      - name: Install build dependencies
+        run: |
+          apt-get update
+          DEBIAN_FRONTEND=noninteractive apt-get install -y bc bison build-essential ca-certificates cpio curl debhelper dpkg-dev dwarves fakeroot file flex git grub-common grub-efi-amd64-bin grub-pc-bin initramfs-tools libelf-dev libssl-dev live-build make mtools nodejs qemu-system-x86 rsync sudo xorriso
+
       - name: Check out Znlite
         uses: actions/checkout@v4
 
@@ -23,16 +30,6 @@ jobs:
           path: build/dl
           key: znlite-linux-6.12.111-${{ runner.os }}
           restore-keys: znlite-linux-6.12.111-${{ runner.os }}-
-
-      - name: Reclaim runner disk space
-        run: |
-          sudo rm -rf -- /usr/share/dotnet /usr/local/lib/android /opt/ghc /usr/local/share/boost /opt/hostedtoolcache/CodeQL
-          df -h "$GITHUB_WORKSPACE"
-
-      - name: Install build dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y bc bison build-essential ca-certificates cpio curl debhelper dpkg-dev dwarves fakeroot file flex git grub-common grub-efi-amd64-bin grub-pc-bin initramfs-tools libelf-dev libssl-dev live-build make mtools qemu-system-x86 rsync sudo xorriso
 
       - name: Check project configuration
         run: ./scripts/check.sh

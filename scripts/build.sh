@@ -93,7 +93,10 @@ sudo mkdir -p "$LIVE_BUILD_DIR/config/packages.chroot"
 sudo cp "$KERNEL_DEB" "$LIVE_BUILD_DIR/config/packages.chroot/"
 cd "$LIVE_BUILD_DIR"
 sudo lb config
-sudo lb build
+sudo lb bootstrap
+sudo lb chroot
+printf '%s\n' 'LB_LINUX_PACKAGES="linux-image"' | sudo tee -a config/binary >/dev/null
+sudo lb binary
 ISO=$(find "$LIVE_BUILD_DIR" -maxdepth 2 -type f -name '*.iso' -print -quit)
 if [ -z "$ISO" ]; then
     printf '%s\n' 'The live-build completed without producing an ISO.' >&2

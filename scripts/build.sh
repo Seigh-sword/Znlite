@@ -95,6 +95,11 @@ cd "$LIVE_BUILD_DIR"
 sudo lb config
 sudo lb bootstrap
 sudo lb chroot
+if [ -e "chroot/boot/initrd.img-$KERNEL_RELEASE" ]; then
+    sudo chroot chroot update-initramfs -u -k "$KERNEL_RELEASE"
+else
+    sudo chroot chroot update-initramfs -c -k "$KERNEL_RELEASE"
+fi
 printf '%s\n' 'LB_LINUX_PACKAGES="linux-image"' | sudo tee -a config/binary >/dev/null
 sudo lb binary
 ISO=$(find "$LIVE_BUILD_DIR" -maxdepth 2 -type f -name '*.iso' -print -quit)

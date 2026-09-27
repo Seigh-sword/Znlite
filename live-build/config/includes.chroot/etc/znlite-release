@@ -1,0 +1,4 @@
+NAME="Znlite Linux"
+VERSION="0.1.0-preview"
+BASE="Debian 13 Trixie"
+KERNEL="Linux 6.12.111-znlite"

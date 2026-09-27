@@ -2,25 +2,101 @@
 set -eu
 ROOT=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 BUILD_ROOT="$ROOT/build"
-BUILDROOT_DIR="$BUILD_ROOT/buildroot"
+DOWNLOAD_DIR="$BUILD_ROOT/dl"
+SOURCE_PARENT="$BUILD_ROOT/src"
+KERNEL_LOCK="$ROOT/kernel/source.lock"
+KERNEL_VERSION=$(sed -n 's/^version=//p' "$KERNEL_LOCK")
+KERNEL_ARCHIVE="$DOWNLOAD_DIR/v$KERNEL_VERSION.tar.gz"
+KERNEL_URL=$(sed -n 's/^archive_url=//p' "$KERNEL_LOCK")
+KERNEL_SHA256=$(sed -n 's/^sha256=//p' "$KERNEL_LOCK")
+KERNEL_SOURCE="$SOURCE_PARENT/linux-$KERNEL_VERSION"
+LIVE_BUILD_DIR="$BUILD_ROOT/live-build"
 OUTPUT_DIR="$BUILD_ROOT/output"
-BUILDROOT_TAG=2026.08
-BUILDROOT_COMMIT=d5180309b1b66ef3b8eaccca70ad69be8e0729a1
-KERNEL_HASH=597f2f0f549f9bbd649b1e3f8f82af0fb5f8e389983cb6748523c3559857c2ab
-mkdir -p "$BUILD_ROOT"
-if [ ! -d "$BUILDROOT_DIR/.git" ]; then
-    git clone --depth 1 --branch "$BUILDROOT_TAG" https://github.com/buildroot/buildroot.git "$BUILDROOT_DIR"
+JOBS=${JOBS:-2}
+for command in curl sha256sum tar make lb sudo dpkg-deb find sed; do
+    if ! command -v "$command" >/dev/null 2>&1; then
+        printf 'Missing build dependency: %s\n' "$command" >&2
+        exit 1
+    fi
+done
+mkdir -p "$DOWNLOAD_DIR" "$SOURCE_PARENT" "$OUTPUT_DIR"
+if [ ! -f "$KERNEL_ARCHIVE" ]; then
+    curl --fail --location --retry 3 "$KERNEL_URL" --output "$KERNEL_ARCHIVE"
 fi
-ACTUAL_COMMIT=$(git -C "$BUILDROOT_DIR" rev-parse HEAD)
-if [ "$ACTUAL_COMMIT" != "$BUILDROOT_COMMIT" ]; then
-    printf 'Unexpected Buildroot revision: %s\nExpected: %s\n' "$ACTUAL_COMMIT" "$BUILDROOT_COMMIT" >&2
+printf '%s  %s\n' "$KERNEL_SHA256" "$KERNEL_ARCHIVE" | sha256sum --check --status || {
+    printf '%s\n' 'Linux source checksum verification failed.' >&2
+    exit 1
+}
+printf '%s  %s\n' "$KERNEL_SHA256" "$(basename -- "$KERNEL_ARCHIVE")" > "$KERNEL_ARCHIVE.sha256"
+if [ ! -f "$KERNEL_SOURCE/Makefile" ]; then
+    mkdir -p "$KERNEL_SOURCE"
+    tar --extract --gzip --file "$KERNEL_ARCHIVE" --strip-components=1 --directory "$KERNEL_SOURCE" --no-same-owner
+fi
+make -C "$KERNEL_SOURCE" ARCH=x86 x86_64_defconfig
+"$KERNEL_SOURCE/scripts/config" \
+    --disable HIBERNATION \
+    --disable KEXEC \
+    --disable CRASH_DUMP \
+    --disable DEBUG_KERNEL \
+    --disable DEBUG_INFO \
+    --disable DEBUG_INFO_BTF \
+    --disable DEBUG_INFO_DWARF5 \
+    --disable FTRACE \
+    --disable KPROBES \
+    --disable KUNIT \
+    --disable KVM \
+    --disable KVM_GUEST \
+    --disable HYPERVISOR_GUEST \
+    --disable PARAVIRT \
+    --disable NET_9P \
+    --disable NETFILTER \
+    --disable VIRTIO_PCI \
+    --disable VIRTIO_BLK \
+    --disable SCSI_VIRTIO \
+    --disable VIRTIO_NET \
+    --disable VIRTIO_CONSOLE \
+    --disable VIRTIO_BALLOON \
+    --disable VIRTIO_INPUT \
+    --disable VIRTIO_MMIO \
+    --disable VIRTIO_MMIO_CMDLINE_DEVICES \
+    --disable DRM_VIRTIO_GPU \
+    --disable DRM_QXL \
+    --disable DRM_BOCHS \
+    --disable NET_9P_VIRTIO \
+    --disable PM_DEBUG \
+    --disable CPU_FREQ_DEFAULT_GOV_USERSPACE \
+    --enable HZ_250
+ARCH=x86 "$KERNEL_SOURCE/scripts/kconfig/merge_config.sh" -m "$KERNEL_SOURCE/.config" "$ROOT/kernel/znlite.fragment"
+make -C "$KERNEL_SOURCE" ARCH=x86 olddefconfig
+find "$SOURCE_PARENT" -maxdepth 1 -type f -name 'linux-image-*.deb' -delete
+make -C "$KERNEL_SOURCE" -j"$JOBS" ARCH=x86 KDEB_PKGVERSION="$KERNEL_VERSION-1" bindeb-pkg
+KERNEL_DEB=$(find "$SOURCE_PARENT" -maxdepth 1 -type f -name 'linux-image-*-amd64.deb' ! -name '*dbg*' -print -quit)
+if [ -z "$KERNEL_DEB" ]; then
+    printf '%s\n' 'The kernel build completed without producing a Debian image package.' >&2
     exit 1
 fi
-HASH_FILE="$BUILDROOT_DIR/linux/linux.hash"
-if ! grep -F "$KERNEL_HASH  v6.12.111.tar.gz" "$HASH_FILE" >/dev/null 2>&1; then
-    git -C "$BUILDROOT_DIR" apply "$ROOT/patches/buildroot/0001-linux-hash-6.12.111.patch"
+if [ -d "$LIVE_BUILD_DIR" ]; then
+    sudo rm -rf -- "$LIVE_BUILD_DIR"
 fi
-JOBS=${JOBS:-$(getconf _NPROCESSORS_ONLN 2>/dev/null || printf '2')}
-make -C "$BUILDROOT_DIR" O="$OUTPUT_DIR" BR2_EXTERNAL="$ROOT" znlite_x86_64_defconfig
-make -C "$BUILDROOT_DIR" O="$OUTPUT_DIR" BR2_EXTERNAL="$ROOT" -j"$JOBS"
-"$ROOT/scripts/make-iso.sh" "$OUTPUT_DIR/images" "$OUTPUT_DIR/images/znlite-live.iso"
+mkdir -p "$LIVE_BUILD_DIR"
+cp -R "$ROOT/live-build/." "$LIVE_BUILD_DIR/"
+sudo mkdir -p "$LIVE_BUILD_DIR/config/packages.chroot"
+sudo cp "$KERNEL_DEB" "$LIVE_BUILD_DIR/config/packages.chroot/"
+cd "$LIVE_BUILD_DIR"
+sudo lb config
+sudo lb build
+ISO=$(find "$LIVE_BUILD_DIR" -maxdepth 2 -type f -name '*.iso' -print -quit)
+if [ -z "$ISO" ]; then
+    printf '%s\n' 'The live-build completed without producing an ISO.' >&2
+    exit 1
+fi
+cp "$ISO" "$OUTPUT_DIR/znlite-live-x86_64.iso"
+cp "$KERNEL_DEB" "$OUTPUT_DIR/znlite-kernel-6.12.111-amd64.deb"
+(
+    cd "$OUTPUT_DIR"
+    sha256sum znlite-live-x86_64.iso znlite-kernel-6.12.111-amd64.deb > SHA256SUMS
+)
+printf '%s\n' 'Znlite live ISO and custom kernel package built successfully.'
+printf 'ISO: %s\n' "$OUTPUT_DIR/znlite-live-x86_64.iso"
+printf 'Kernel package: %s\n' "$OUTPUT_DIR/znlite-kernel-6.12.111-amd64.deb"
+printf 'Kernel source: %s\n' "$KERNEL_SOURCE"

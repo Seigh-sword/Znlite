@@ -1,47 +1,59 @@
 # Znlite Linux
 
-Znlite is a new, lightweight Linux distribution project for older laptops. It did not exist as a finished distribution before this repository was initialized. This repository now contains its first buildable system design: a minimal, x86-64 live image assembled with Buildroot and a customized upstream Linux kernel configuration.
+Znlite is an experimental, text-only Linux distribution for older laptops. This first usable design is based on Debian 13 Trixie so the installed system has APT and can be expanded with packages later. The live image has no graphical desktop or X server.
 
-## First prototype
+Acer TravelMate B is a product family, not one hardware specification. Acer publishes separate support pages for models such as the B115-M and B117-M. Those families include different processor, Wi-Fi, storage, and firmware combinations. Intel's specifications identify both the Celeron N2840 and N3060 as 64-bit processors, so the current amd64 target is a reasonable starting point for those variants. The exact model code is still needed to confirm its wireless device and boot firmware.
 
-The initial image is a small, text-mode live system intended to check that the kernel boots and recognizes laptop hardware. It includes a recent Linux 6.12 LTS kernel, BusyBox, device management, ConnMan, ACPI and power controls, and a selected set of common Intel, Broadcom, Atheros, and Realtek drivers and firmware.
+- [Acer TravelMate B115-M support](https://www.acer.com/us-en/support?search=TravelMate+B115-M&filter=global_download)
+- [Acer TravelMate B117-M support](https://www.acer.com/gb-en/support/product-support/TravelMate_B117-M)
+- [Intel Celeron N2840 specifications](https://www.intel.com/content/www/us/en/products/sku/82103/intel-celeron-processor-n2840-1m-cache-up-to-2-58-ghz/specifications.html)
+- [Intel Celeron N3060 specifications](https://www.intel.com/content/www/us/en/products/sku/91832/intel-celeron-processor-n3060-2m-cache-up-to-2-48-ghz/specifications.html)
 
-This is an early prototype, not a finished daily-use operating system. It has no graphical desktop, installer, persistent storage setup, Znlite package repository, or unattended security-update service yet. Do not use it as your only operating system or write it over a laptop's internal drive.
+## What this build includes
 
-The first build targets 64-bit x86 laptops. A 32-bit-only laptop needs a separate build target. Hardware-specific tuning is intentionally deferred until the exact laptop model and devices are known; disabling drivers without that information can make Wi-Fi, graphics, audio, suspend, or storage stop working.
+- A Debian 13 text-only live image with a text installer and APT.
+- A custom Debian kernel package built from the pinned upstream Linux 6.12.111 source.
+- Kernel settings for laptop ACPI and battery reporting, Intel integrated graphics, common storage, audio, USB, and a broad selection of Intel, Realtek, Atheros, Broadcom, and Ralink network devices.
+- Selected non-free firmware packages from Debian's firmware repository.
+- BIOS and 64-bit UEFI boot paths and a QEMU boot smoke test in GitHub Actions.
 
-## Build a live ISO
+No desktop packages are installed in the image. After installing Znlite to disk and connecting to a network, a desktop can be added with APT, for example `sudo apt update` followed by `sudo apt install xfce4 lightdm`. Packages added to a temporary live session are lost when it reboots; install Znlite to a drive first if changes need to persist.
 
-The build downloads pinned Buildroot and Linux sources, verifies the Linux source archive against a SHA-256 checksum, compiles the system, and creates a bootable ISO. Generated sources, downloads, and output images stay under the ignored `build/` directory.
+This is an early preview, not a finished independent package distribution. It uses Debian's package repositories and release process. Hardware support has not yet been tested on the exact laptop. It has no Znlite update repository, custom desktop, or long-term security-maintenance policy. Do not replace an existing installation until the image has been tested and important data is backed up.
 
-On Debian or Ubuntu, install the host tools first:
+## The Linux kernel source
+
+The kernel source is not copied into Git because the source archive is about 235 MB and its extracted tree is much larger. `kernel/source.lock` records the exact upstream tag, commit, download URL, and SHA-256. `scripts/build.sh` downloads the archive, verifies it, extracts it to `build/src/linux-6.12.111`, trims the generic x86-64 configuration, applies `kernel/znlite.fragment`, builds a Debian kernel package, and includes that package in the ISO. The upstream C source remains unchanged for now; source patches should follow a reproducible hardware bug or measured need.
+
+GitHub Actions publishes the exact kernel source archive alongside the ISO and `.deb` package when a preview release is created. The kernel configuration and reproducible build steps are visible in this repository.
+
+## Build locally
+
+The build host needs Debian/Ubuntu packages for kernel compilation, Debian live-build, and ISO creation. For example:
 
 ```sh
-sudo apt install bc bison build-essential cpio file flex g++ gcc git libelf-dev libncurses-dev make patch python3 rsync unzip wget xorriso mtools grub-common grub-pc-bin grub-efi-amd64-bin
+sudo apt update
+sudo apt install bc bison build-essential ca-certificates cpio curl debhelper dpkg-dev dwarves fakeroot file flex git grub-common grub-efi-amd64-bin grub-pc-bin initramfs-tools libelf-dev libssl-dev live-build make mtools qemu-system-x86 rsync sudo xorriso
 ```
 
-Then build with a conservative number of parallel jobs on a low-memory machine:
+Run the build with a conservative job count:
 
 ```sh
 JOBS=2 ./scripts/build.sh
 ```
 
-The ISO is written to `build/output/images/znlite-live.iso`. Use a USB imaging tool such as Fedora Media Writer or balenaEtcher, select the USB device carefully, then boot the laptop from that USB device. The build currently requires an internet connection and several gigabytes of free disk space.
+This build uses `sudo` for Debian live-build. It writes generated files under the ignored `build/` directory:
 
-## Project layout
+- `build/output/znlite-live-x86_64.iso`
+- `build/output/znlite-kernel-6.12.111-amd64.deb`
+- `build/output/SHA256SUMS`
+- `build/dl/v6.12.111.tar.gz`
 
-- `configs/znlite_x86_64_defconfig` defines the minimal root filesystem and selected hardware support.
-- `board/znlite/x86_64/linux.config` is the baseline PC kernel configuration.
-- `board/znlite/x86_64/linux.fragment` adds laptop power, storage, input, audio, graphics, and wireless support.
-- `scripts/build.sh` fetches pinned Buildroot sources and builds the image.
-- `scripts/make-iso.sh` packages the kernel and live root filesystem as an ISO.
-- `patches/buildroot/` adds the verifiable checksum for the selected upstream kernel archive to the pinned Buildroot checkout.
+Run the configuration checks with `./scripts/check.sh`. GitHub Actions performs these checks, builds the ISO and kernel package, boots the ISO under QEMU, and uploads the ISO, kernel package, and verified upstream source archive as artifacts. A successful artifact can then be published as a preview GitHub Release.
 
-The Linux source is fetched during the build rather than checked into this repository. Kernel source trees are very large; the source version, archive location, and checksum are recorded in the build configuration and patch.
+## Hardware details needed
 
-## Hardware details needed for the next iteration
-
-To tune the kernel and choose an appropriately light desktop, send the laptop's exact make and model, processor, RAM, and Wi-Fi adapter. From an existing Linux installation, useful output is:
+Please send the full model code from the bottom label, such as `TravelMate B115-M-...` or `B117-M-...`, plus the amount of RAM. Wi-Fi chips can vary even within a model family. From an existing Linux installation, these commands help identify the hardware:
 
 ```sh
 lscpu
@@ -49,5 +61,3 @@ free -h
 lspci -nn
 lsusb
 ```
-
-The correct next step is to test this live image on the target laptop, record what works and what fails, then make narrow, reproducible kernel or system changes against that hardware. A kernel configuration is already being customized; broad source-code changes without a reproducible problem or target device would make the first image less reliable, not less bloated.

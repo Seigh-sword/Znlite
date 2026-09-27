@@ -1,0 +1,10 @@
+/build/
+/output/
+*.iso
+*.img
+*.qcow2
+*.cpio
+*.cpio.gz
+*.cpio.xz
+*.vmlinuz
+*.bzImage

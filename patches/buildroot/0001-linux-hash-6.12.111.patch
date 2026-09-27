@@ -1,0 +1,10 @@
+diff --git a/linux/linux.hash b/linux/linux.hash
+new file mode 100644
+index 00000000..c8b5f28d
+--- /dev/null
++++ b/linux/linux.hash
+@@ -0,0 +1,4 @@
++sha256  597f2f0f549f9bbd649b1e3f8f82af0fb5f8e389983cb6748523c3559857c2ab  v6.12.111.tar.gz
++sha256  fb5a425bd3b3cd6071a3a9aff9909a859e7c1158d54d32e07658398cd67eb6a0  COPYING
++sha256  f6b78c087c3ebdf0f3c13415070dd480a3f35d8fc76f3d02180a407c1c812f79  LICENSES/preferred/GPL-2.0
++sha256  8e378ab93586eb55135d3bc119cce787f7324f48394777d00c34fa3d0be3303f  LICENSES/exceptions/Linux-syscall-note

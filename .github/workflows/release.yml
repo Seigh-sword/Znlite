@@ -24,6 +24,11 @@ jobs:
           key: znlite-linux-6.12.111-${{ runner.os }}
           restore-keys: znlite-linux-6.12.111-${{ runner.os }}-
 
+      - name: Reclaim runner disk space
+        run: |
+          sudo rm -rf -- /usr/share/dotnet /usr/local/lib/android /opt/ghc /usr/local/share/boost /opt/hostedtoolcache/CodeQL
+          df -h "$GITHUB_WORKSPACE"
+
       - name: Install build dependencies
         run: |
           sudo apt-get update
@@ -46,7 +51,12 @@ jobs:
           for log_file in build/build.log build/output/qemu-boot.log; do
             if [ -f "$log_file" ]; then
               snippet=$(tail -n 100 "$log_file" | sed ':a;N;$!ba;s/\n/ | /g')
-              printf '::error title=Build diagnostic::%s\n' "${snippet:0:60000}"
+              for start in 0 3000 6000 9000; do
+                part=${snippet:start:3000}
+                if [ -n "$part" ]; then
+                  printf '::error title=Build diagnostic part %s::%s\n' "$((start / 3000 + 1))" "$part"
+                fi
+              done
             fi
           done
 

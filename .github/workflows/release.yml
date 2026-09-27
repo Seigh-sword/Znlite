@@ -31,8 +31,14 @@ jobs:
           key: znlite-linux-6.12.111-${{ runner.os }}
           restore-keys: znlite-linux-6.12.111-${{ runner.os }}-
 
+      - name: Trust checkout directory
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+
       - name: Check project configuration
-        run: ./scripts/check.sh
+        shell: bash
+        run: |
+          mkdir -p build
+          ./scripts/check.sh 2>&1 | tee build/check.log
 
       - name: Build text-only live image and custom kernel package
         shell: bash
@@ -45,7 +51,7 @@ jobs:
         if: failure()
         shell: bash
         run: |
-          for log_file in build/build.log build/output/qemu-boot.log; do
+          for log_file in build/check.log build/build.log build/output/qemu-boot.log; do
             if [ -f "$log_file" ]; then
               snippet=$(tail -n 100 "$log_file" | sed ':a;N;$!ba;s/\n/ | /g')
               for start in 0 3000 6000 9000; do

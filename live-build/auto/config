@@ -17,7 +17,7 @@ lb config noauto \
     --apt-recommends false \
     --debootstrap-options "--variant=minbase" \
     --memtest none \
-    --bootappend-live "boot=live components quiet console=tty0 console=ttyS0,115200n8" \
+    --bootappend-live "boot=live components console=tty0 console=ttyS0,115200n8" \
     --iso-application "Znlite Linux" \
     --iso-publisher "Znlite Linux project" \
     --iso-volume "ZNLITE_TEXT" \

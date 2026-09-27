@@ -81,7 +81,7 @@ jobs:
         if: failure()
         shell: bash
         run: |
-          for log_file in build/check.log build/build.log build/output/qemu-boot.log; do
+          for log_file in build/check.log build/build.log build/output/qemu-boot.log build/output/qemu-boot-monitor.log; do
             if [ -f "$log_file" ]; then
               snippet=$(tail -n 100 "$log_file" | sed ':a;N;$!ba;s/\n/ | /g')
               for start in 0 3000 6000 9000 12000 15000; do
@@ -92,3 +92,15 @@ jobs:
               done
             fi
           done
+
+      - name: Upload QEMU failure diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: znlite-qemu-failure-diagnostics
+          path: |
+            build/output/qemu-boot.log
+            build/output/qemu-boot-monitor.log
+            build/output/qemu-boot-screen.ppm
+          if-no-files-found: ignore
+          retention-days: 14

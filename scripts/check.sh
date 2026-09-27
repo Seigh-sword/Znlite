@@ -5,7 +5,8 @@ sh -n "$ROOT/scripts/build.sh" "$ROOT/scripts/smoke-test.sh" "$ROOT/live-build/a
 grep -Fx 'version=6.12.111' "$ROOT/kernel/source.lock" >/dev/null
 grep -Fx 'commit=e2acc2211022246c77740d5df08265cc27eedcc5' "$ROOT/kernel/source.lock" >/dev/null
 grep -F 'sha256=' "$ROOT/kernel/source.lock" >/dev/null
-grep -F 'CONFIG_LOCALVERSION="-znlite"' "$ROOT/kernel/znlite.fragment" >/dev/null
+grep -F 'CONFIG_LOCALVERSION=""' "$ROOT/kernel/znlite.fragment" >/dev/null
+grep -F 'LOCALVERSION=-znlite' "$ROOT/scripts/build.sh" >/dev/null
 grep -F 'CONFIG_DRM_I915=y' "$ROOT/kernel/znlite.fragment" >/dev/null
 grep -F 'CONFIG_ACPI_BATTERY=y' "$ROOT/kernel/znlite.fragment" >/dev/null
 grep -F 'CONFIG_SQUASHFS=y' "$ROOT/kernel/znlite.fragment" >/dev/null

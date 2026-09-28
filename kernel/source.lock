@@ -1,0 +1,5 @@
+version=6.12.111
+tag=v6.12.111
+commit=e2acc2211022246c77740d5df08265cc27eedcc5
+archive_url=https://github.com/gregkh/linux/archive/refs/tags/v6.12.111.tar.gz
+sha256=597f2f0f549f9bbd649b1e3f8f82af0fb5f8e389983cb6748523c3559857c2ab

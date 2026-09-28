@@ -1,0 +1,105 @@
+name: Znlite live image
+
+on:
+  push:
+    branches:
+      - arena/01a0e2b8-znlite
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      - name: Check out Znlite
+        uses: actions/checkout@v4
+
+      - name: Cache Linux source archive
+        uses: actions/cache@v4
+        with:
+          path: build/dl
+          key: znlite-linux-6.12.111-${{ runner.os }}
+          restore-keys: znlite-linux-6.12.111-${{ runner.os }}-
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y bc bison build-essential ca-certificates cpio curl debhelper debootstrap dpkg-dev dwarves fakeroot file flex git grub-common grub-efi-amd64-bin grub-pc-bin initramfs-tools libelf-dev libssl-dev live-build make mtools qemu-system-x86 rsync sudo xorriso
+
+      - name: Install Debian Trixie archive keyring and live-build
+        run: |
+          curl --fail --location --retry 3 https://deb.debian.org/debian/pool/main/d/debian-archive-keyring/debian-archive-keyring_2025.1_all.deb --output /tmp/debian-archive-keyring.deb
+          printf '%s  %s\n' 9ea7778e443144ca490668737a8ab22dd3e748bb99e805e22ec055abeb3c7fac /tmp/debian-archive-keyring.deb | sha256sum --check
+          sudo dpkg --install /tmp/debian-archive-keyring.deb
+          curl --fail --location --retry 3 https://deb.debian.org/debian/pool/main/l/live-build/live-build_20250505+deb13u1_all.deb --output /tmp/live-build.deb
+          printf '%s  %s\n' 58e09779881cbcc631c49ceb703413e0247a87db01823e597b2a1c40a2afd8f4 /tmp/live-build.deb | sha256sum --check
+          sudo dpkg --install /tmp/live-build.deb
+          lb --version
+
+      - name: Trust checkout directory
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+
+      - name: Check project configuration
+        shell: bash
+        run: |
+          mkdir -p build
+          ./scripts/check.sh 2>&1 | tee build/check.log
+
+      - name: Build text-only live image and custom kernel package
+        shell: bash
+        run: |
+          set -o pipefail
+          mkdir -p build
+          JOBS=2 ./scripts/build.sh 2>&1 | tee build/build.log
+
+      - name: Verify kernel package metadata
+        run: |
+          test "$(dpkg-deb --field build/output/znlite-kernel-6.12.111-amd64.deb Version)" = "6.12.111-1"
+          test "$(dpkg-deb --field build/output/znlite-kernel-6.12.111-amd64.deb Architecture)" = "amd64"
+          dpkg-deb --field build/output/znlite-kernel-6.12.111-amd64.deb Package | grep -E '^linux-image-6\.12\.111-znlite$'
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: znlite-x86_64-text-only
+          path: |
+            build/output/znlite-live-x86_64.iso
+            build/output/znlite-kernel-6.12.111-amd64.deb
+            build/output/SHA256SUMS
+            build/dl/v6.12.111.tar.gz
+            build/dl/v6.12.111.tar.gz.sha256
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Smoke test BIOS boot in QEMU
+        run: ./scripts/smoke-test.sh
+
+      - name: Report failure diagnostics
+        if: failure()
+        shell: bash
+        run: |
+          for log_file in build/check.log build/build.log build/output/qemu-boot.log build/output/qemu-boot-stderr.log; do
+            if [ -f "$log_file" ]; then
+              snippet=$(tail -n 100 "$log_file" | sed ':a;N;$!ba;s/\n/ | /g')
+              for start in 0 3000 6000 9000 12000 15000; do
+                part=${snippet:start:3000}
+                if [ -n "$part" ]; then
+                  printf '::error title=Build diagnostic part %s::%s\n' "$((start / 3000 + 1))" "$part"
+                fi
+              done
+            fi
+          done
+
+      - name: Upload QEMU failure diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: znlite-qemu-failure-diagnostics
+          path: |
+            build/output/qemu-boot.log
+            build/output/qemu-boot-stderr.log
+          if-no-files-found: ignore
+          retention-days: 14

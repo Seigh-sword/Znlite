@@ -1,0 +1,8 @@
+/build/
+/output/
+*.iso
+*.deb
+*.img
+*.qcow2
+*.vmlinuz
+*.bzImage

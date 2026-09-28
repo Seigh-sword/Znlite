@@ -34,3 +34,11 @@ usbutils
 user-setup
 wireless-regdb
 wpasupplicant
+bash
+dbus
+fontconfig
+fonts-dejavu-core
+kbd
+kmscon/trixie-backports
+libtsm4/trixie-backports
+xkb-data

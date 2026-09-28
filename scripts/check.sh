@@ -4,6 +4,16 @@ ROOT=$(CDPATH='' cd -- "$(dirname -- "$0")/.." && pwd)
 for script in "$ROOT"/scripts/*.sh "$ROOT/live-build/auto/config"; do
     sh -n "$script"
 done
+for script in "$ROOT"/live-build/config/includes.chroot/usr/local/bin/*; do
+    bash -n "$script"
+    test -x "$script"
+done
+for script in "$ROOT"/live-build/config/hooks/live/*.hook.chroot \
+    "$ROOT"/live-build/config/includes.chroot/usr/local/libexec/* \
+    "$ROOT"/live-build/config/includes.chroot/etc/profile.d/*.sh \
+    "$ROOT"/live-build/config/includes.chroot/usr/local/share/znlite/*.sh; do
+    sh -n "$script"
+done
 # A zero/missing timeout leaves unattended BIOS boots stuck at the menu.
 awk '$1 == "timeout" { timeout = $2 } END { exit !(timeout > 0 && timeout <= 100) }' \
     "$ROOT/live-build/config/bootloaders/isolinux/isolinux.cfg"
@@ -20,6 +30,9 @@ grep -F -- '--disable HYPERVISOR_GUEST' "$ROOT/scripts/build.sh" >/dev/null
 grep -F -- '--disable DEBUG_INFO' "$ROOT/scripts/build.sh" >/dev/null
 grep -F -- '--linux-packages none' "$ROOT/live-build/auto/config" >/dev/null
 grep -F -- 'boot=live components console=tty0 console=ttyS0,115200n8' "$ROOT/live-build/auto/config" >/dev/null
+grep -Fx 'vector' "$ROOT/live-build/config/includes.chroot/etc/znlite/console-mode" >/dev/null
+grep -Fx 'kmscon/trixie-backports' "$ROOT/live-build/config/package-lists/znlite.list.chroot" >/dev/null
+grep -Fx 'fonts-dejavu-core' "$ROOT/live-build/config/package-lists/znlite.list.chroot" >/dev/null
 grep -Fx 'apt' "$ROOT/live-build/config/package-lists/znlite.list.chroot" >/dev/null
 grep -Fx 'network-manager' "$ROOT/live-build/config/package-lists/znlite.list.chroot" >/dev/null
 if grep -E '^(xorg|task-.*desktop|xfce|lxde|lxqt|gnome|kde|mate|lightdm|sddm)$' "$ROOT/live-build/config/package-lists/znlite.list.chroot" >/dev/null; then

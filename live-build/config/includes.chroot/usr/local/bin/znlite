@@ -1,0 +1,98 @@
+#!/usr/bin/env bash
+set -euo pipefail
+bin=$(CDPATH='' cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
+usage() {
+    cat <<'HELP'
+Znlite / Aurora
+
+  znlite info                     System info and mascot (also: znfetch / neofetch)
+  znlite welcome [--animate]       Full mascot; animation is optional
+  sudo znlite update              Refresh APT and review a full package upgrade
+  sudo znlite update --check      Refresh APT, then simulate changes only
+  sudo znlite update --yes        Explicitly accept APT's upgrade confirmation
+  sudo znlite update --allow-live Allow temporary updates in a live session
+  znlite fonts status            Show the configured console default
+  sudo znlite fonts vector       Use scalable TrueType text on tty1 next boot
+  sudo znlite fonts raster       Use the kernel's bitmap console next boot
+
+Ctrl+Alt+F2 always opens the raster rescue console. Serial consoles stay raster.
+Updates use the configured signed APT repositories. There is no Znlite release
+repository yet: the custom kernel and Znlite tools/branding are NOT upgraded by
+this command. It does not perform major Debian release upgrades or autoremove.
+HELP
+}
+require_root() {
+    if (( EUID != 0 )); then
+        printf '%s\n' 'Run this command with sudo (see znlite help).' >&2
+        exit 1
+    fi
+}
+is_live() {
+    [[ -d /run/live/medium ]] || grep -Eq '(^| )boot=live( |$)' /proc/cmdline
+}
+main() {
+    local command check yes allow_live option
+    command=${1:-help}
+    if (( $# )); then shift; fi
+    case "$command" in
+        info) exec "$bin/znfetch" "$@" ;;
+        welcome) exec "$bin/znfetch" --full "$@" ;;
+        help|--help|-h) usage ;;
+        update)
+            check=0; yes=0; allow_live=0
+            for option in "$@"; do
+                case "$option" in
+                    --check) check=1 ;;
+                    --yes) yes=1 ;;
+                    --allow-live) allow_live=1 ;;
+                    *) printf 'Unknown update option: %s\n' "$option" >&2; exit 2 ;;
+                esac
+            done
+            require_root
+            if is_live; then
+                if (( ! allow_live )); then
+                    printf '%s\n' 'Live session detected. Updates may be lost at reboot and use overlay space.' \
+                        'Install to disk first, or explicitly pass --allow-live to continue.' >&2
+                    exit 1
+                fi
+                printf '%s\n' 'Warning: updating the live overlay; changes may not persist.' >&2
+            fi
+            printf '%s\n' 'Updating signed APT packages. Custom Znlite kernel/tools are not covered.'
+            # Error-Mode=any stops on stale/unreachable indexes, not just fatal errors.
+            apt-get -o APT::Update::Error-Mode=any update
+            if (( check )); then
+                apt-get --simulate full-upgrade
+            elif (( yes )); then
+                apt-get --assume-yes full-upgrade
+            else
+                apt-get full-upgrade
+            fi
+            if (( ! check )) && [[ -f /var/run/reboot-required ]]; then
+                printf '%s\n' 'A reboot is recommended. Reboot when you are ready; Znlite will not do it automatically.'
+            fi
+            ;;
+        fonts)
+            if (( $# > 1 )); then usage >&2; exit 2; fi
+            case "${1:-status}" in
+                status)
+                    printf 'Default on tty1: %s\n' "$(cat /etc/znlite/console-mode 2>/dev/null || printf 'raster (not configured)')"
+                    printf '%s\n' 'Vector: Kmscon + FreeType + DejaVu Sans Mono.' \
+                        'Raster: Linux VT bitmap fonts. Rescue: Ctrl+Alt+F2.'
+                    ;;
+                vector|raster)
+                    require_root
+                    if [[ $1 == vector ]] && ! command -v kmscon >/dev/null 2>&1; then
+                        printf '%s\n' 'Kmscon is missing. Install the Znlite vector-console packages first.' >&2
+                        exit 1
+                    fi
+                    install -d -m 0755 /etc/znlite
+                    printf '%s\n' "$1" > /etc/znlite/console-mode
+                    printf 'Default set to %s for the next boot. Your current session is unchanged.\n' "$1"
+                    ;;
+                *) printf '%s\n' 'Usage: znlite fonts [status|vector|raster]' >&2; exit 2 ;;
+            esac
+            ;;
+        *) printf 'Unknown command: %s (try znlite help)\n' "$command" >&2; exit 2 ;;
+    esac
+}
+if [[ ${BASH_SOURCE[0]} == "$0" ]]; then main "$@"; fi

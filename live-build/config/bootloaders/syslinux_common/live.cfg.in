@@ -1,0 +1,18 @@
+label live-@FLAVOUR@
+    menu label ^Znlite Aurora - vector console
+    menu default
+    linux @LINUX@
+    initrd @INITRD@
+    append @APPEND_LIVE@
+
+label live-@FLAVOUR@-raster
+    menu label Znlite Aurora - ^raster rescue
+    linux @LINUX@
+    initrd @INITRD@
+    append @APPEND_LIVE@ znlite.console=raster
+
+label live-@FLAVOUR@-failsafe
+    menu label Znlite Aurora - ^safe mode
+    linux @LINUX@
+    initrd @INITRD@
+    append @APPEND_LIVE_FAILSAFE@ znlite.console=raster console=tty0 console=ttyS0,115200n8

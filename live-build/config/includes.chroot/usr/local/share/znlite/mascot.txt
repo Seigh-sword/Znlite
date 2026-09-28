@@ -1,0 +1,36 @@
+        ...                              ....
+       ........                      ......:..
+       ..  ...x...                 ...;..   ;;
+      ...    ...x:..             ...x...    :$
+      ...      ..xx:..............xx..      :$
+       ..       :xxxxxxxxxxxxxxxxxxx:      .+:
+       .x.    ...xXXXXXxxxxxxxxxXXxX...    .x.
+       .... ...xxxxxxxxXXXXXxXXxxxxXxx... .+..
+        .x:..xxxxxxXxxxxxxxxxxxXxxXxxxxx.....
+         xxxxxxxxxxxxxXxXxXXXxxXXXxxxxxxXXX.
+        .xXXxxxxx.....xxxxxxxx......xxxxxxx..
+       .:XxxXXXxx+    ..XxXxX..    .XXXxxXXx..
+     ..:x+;;++xxx....  .Xx$XX.  ...:xxxxxxxXX&x.
+    ..;+;&&&&$&;x+xx:..;xXxxx;..:;;;;+&&&&x;;;$.
+      .....+xX$&&&&;+xxxxx$xxxxx+x $&&$Xxx:...&
+           .....;X$&&xxXXxxxxxx:&Xxx:.....
+                ...;$&;xxXXXxx&&$:..
+            .      :..+&x::.x&;..
+          ..      .   .... ...;   .      .
+         ..     ..:...         .....     ...
+       ....    ..$XxXx........:$X$$X..    .:..
+      .;$.    .:$$$XX$$XXX$$$$XXXxX$X:.   .:X..
+    ..x$:.   ..xXxxxxxxxXXXXxXxxXxx$$x.    .X&&x.
+   ..$$$.    .$Xx$$$$$$$$xxxXxXXXxXXX$x.   .:$X$..
+  .:$X$x.   .:$XXXXXXXXXXXXXXXX$$$$XXX$..   .XX$$:.
+ .:&$$$x.   .X$$$$$XX$X$$$$$$$XXXXXXXX$x.   .$$$$&:.
+..&$$$&X.   .$$xXx$XXXXXXXX$XXXXXXXXX$$X.   .&&$$$&:.
+.$$$$x...   .$XX$XX$$$$XXXXX$$$$X$X$XX$$.   ...x$&$$.
+.&&&+.      .$$$$$$XXXX$$$$$XXX$$$XX$X$$.      .;&&$.
+.&x.        .$&$$$$$$$$$$$$$$$$$$$$$$$$;.       .x&&.
+.+.         .;&$$$XX$$$$$$$$$$$$$$$xx$$.          ;x.
+             .;&$$$$$$$$$$$$$$$$$$$$$&;.           .
+              ....x&&$&$$$$$$$&$$$x:...
+                  ;;..+&$$$$$$x:.++
+             .....;:  ........:  ;;.....
+           .......:...         ...........

@@ -1,0 +1,114 @@
+#!/usr/bin/env bash
+# Offline, dependency-light system information. No network calls or eval.
+set -euo pipefail
+share=$(CDPATH='' cd -- "$(dirname -- "$0")/../share/znlite" && pwd)
+color=auto
+full=0
+logo_only=0
+animate=0
+for argument in "$@"; do
+    case "$argument" in
+        --full) full=1 ;;
+        --logo-only) logo_only=1; full=1 ;;
+        --animate) animate=1 ;;
+        --no-color|--color=never) color=never ;;
+        --color=always) color=always ;;
+        --color=auto) color=auto ;;
+        -h|--help)
+            printf '%s\n' 'znfetch [--full] [--logo-only] [--animate] [--color=auto|always|never]' \
+                'Uses a compact layout on small terminals; --full shows the supplied mascot.' \
+                'NO_COLOR disables ANSI colors. ZNLITE_NO_ANIMATION=1 disables animation.'
+            exit 0 ;;
+        *) printf 'Unknown option: %s\n' "$argument" >&2; exit 2 ;;
+    esac
+done
+mode=plain
+if [[ ! -v NO_COLOR && ${TERM:-dumb} != dumb ]] &&
+    { [[ $color == always ]] || { [[ $color == auto ]] && [[ -t 1 ]]; }; }; then
+    mode=ansi
+    if [[ ${TERM:-} != linux ]]; then
+        case "${COLORTERM:-}:${TERM:-}" in
+            truecolor:*|24bit:*|*:kmscon|*:xterm*|*:*-direct) mode=truecolor ;;
+        esac
+    fi
+fi
+[[ $color != never ]] || mode=plain
+accent=''; dim=''; reset=''
+if [[ $mode != plain ]]; then
+    accent=$'\e[1;36m'; dim=$'\e[0;90m'; reset=$'\e[0m'
+fi
+# Animation is opt-in, TTY-only, and never used in scripts or a dumb terminal.
+if [[ ! -t 1 || $mode == plain || ${ZNLITE_NO_ANIMATION:-0} == 1 ]]; then animate=0; fi
+columns=80
+lines=24
+if [[ -t 1 ]]; then
+    columns=$(tput cols 2>/dev/null || printf 80)
+    lines=$(tput lines 2>/dev/null || printf 24)
+fi
+[[ $columns =~ ^[0-9]+$ ]] || columns=80
+[[ $lines =~ ^[0-9]+$ ]] || lines=24
+if (( columns >= 112 && lines >= 38 )); then full=1; fi
+if (( full )); then
+    mapfile -t raw < "$share/mascot.txt"
+    mapfile -t art < <(awk -v mode="$mode" -f "$share/mascot.awk" "$share/mascot.txt")
+else
+    # The trailing backslashes are literal parts of the ears and feet.
+    # shellcheck disable=SC1003
+    raw=('   /\     /\' '  /  \___/  \' ' |  o     o  |' '  \   >.<   /' '   /|     |\' '  /_|_____|_\')
+    art=()
+    for row in "${raw[@]}"; do art+=("$accent$row$reset"); done
+fi
+if (( logo_only )); then
+    for row in "${art[@]}"; do
+        printf '%s\n' "$row"
+        if (( animate )); then sleep 0.015; fi
+    done
+    exit 0
+fi
+os=$(awk -F= '$1 == "PRETTY_NAME" {gsub(/^"|"$/, "", $2); print $2; exit}' /etc/os-release 2>/dev/null || true)
+os=${os:-Linux}
+kernel=$(uname -r)
+cpu=$(awk -F': ' '/model name/ {print $2; exit}' /proc/cpuinfo)
+cpu=${cpu:-$(uname -m)}
+uptime_text=$(awk '{d=int($1/86400); h=int($1/3600)%24; m=int($1/60)%60; printf "%dd %dh %dm",d,h,m}' /proc/uptime)
+memory=$(awk '/^MemTotal:/ {t=$2} /^MemAvailable:/ {a=$2} END {printf "%.0f / %.0f MiB", (t-a)/1024,t/1024}' /proc/meminfo)
+packages=$(dpkg-query -W -f='${db:Status-Status}\n' 2>/dev/null | awk '$0 == "installed" {n++} END {print n+0}' || printf '?')
+disk=$(df -hP / | awk 'NR == 2 {printf "%s / %s (%s)", $3,$2,$5}')
+session='installed system'
+if [[ -d /run/live/medium ]] || grep -Eq '(^| )boot=live( |$)' /proc/cmdline; then session='live session (changes may be temporary)'; fi
+user=$(id -un)
+host=$(hostname)
+# Avoid reinterpreting untrusted host/user strings as terminal escape sequences.
+clean() { LC_ALL=C tr -d '\000-\037\177'; }
+info=("${accent}Z N L I T E${reset}  /  A U R O R A" "${dim}Small system. Bright ideas.${reset}" '')
+field() { info+=("${accent}$1${reset}  $(printf '%s' "$2" | clean)"); }
+field User "$user@$host"
+field OS "$os"
+field Kernel "$kernel"
+field Uptime "$uptime_text"
+field Packages "$packages (dpkg)"
+shell=${SHELL:-unknown}
+field Shell "${shell##*/}"
+field Terminal "${TERM:-unknown}"
+field CPU "$cpu"
+field Memory "$memory"
+field Disk "$disk"
+field Session "$session"
+info+=('' "${dim}znlite help  /  sudo znlite update${reset}")
+width=0
+for row in "${raw[@]}"; do if (( ${#row} > width )); then width=${#row}; fi; done
+if (( columns >= width + 56 )); then
+    count=${#art[@]}
+    if (( ${#info[@]} > count )); then count=${#info[@]}; fi
+    for ((i=0; i<count; i++)); do
+        row=${raw[i]:-}
+        printf '%s%*s%s\n' "${art[i]:-}" "$((width - ${#row} + 3))" '' "${info[i]:-}"
+        if (( animate )); then sleep 0.015; fi
+    done
+else
+    for row in "${art[@]}"; do
+        printf '%s\n' "$row"
+        if (( animate )); then sleep 0.015; fi
+    done
+    printf '%s\n' '' "${info[@]}"
+fi

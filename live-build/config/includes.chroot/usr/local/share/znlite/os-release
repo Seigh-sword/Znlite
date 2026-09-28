@@ -1,0 +1,11 @@
+PRETTY_NAME="Znlite Linux 0.2.0 (Aurora Preview)"
+NAME="Znlite Linux"
+VERSION_ID="0.2.0"
+VERSION="0.2.0 (Aurora Preview)"
+VERSION_CODENAME=trixie
+ID=znlite
+ID_LIKE=debian
+HOME_URL="https://github.com/Seigh-sword/Znlite"
+SUPPORT_URL="https://github.com/Seigh-sword/Znlite/issues"
+BUG_REPORT_URL="https://github.com/Seigh-sword/Znlite/issues"
+ANSI_COLOR="1;36"

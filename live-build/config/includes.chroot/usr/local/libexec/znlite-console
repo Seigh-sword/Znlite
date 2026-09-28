@@ -1,0 +1,7 @@
+#!/bin/sh
+set -eu
+share=$(CDPATH='' cd -- "$(dirname -- "$0")/../share/znlite" && pwd)
+# shellcheck source-path=SCRIPTDIR
+# shellcheck source=../share/znlite/console.sh
+. "$share/console.sh"
+znlite_console

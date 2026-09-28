@@ -1,0 +1,3 @@
+#!/bin/sh
+# Familiar command name for Znlite's own fetch; not upstream neofetch's full CLI.
+exec "$(dirname -- "$0")/znfetch" "$@"

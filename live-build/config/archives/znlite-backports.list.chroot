@@ -1,0 +1,2 @@
+# Only the vector console and required dependencies are selected from backports.
+deb [signed-by=/usr/share/keyrings/debian-archive-keyring.gpg] https://deb.debian.org/debian trixie-backports main

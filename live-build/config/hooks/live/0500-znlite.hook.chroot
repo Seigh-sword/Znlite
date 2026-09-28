@@ -1,0 +1,26 @@
+#!/bin/sh
+set -eu
+# Divert Debian's package-owned identity; future base-files upgrades retain ours.
+if [ "$(dpkg-divert --truename /usr/lib/os-release)" = /usr/lib/os-release ]; then
+    dpkg-divert --local --rename --add /usr/lib/os-release
+fi
+install -m 0644 /usr/local/share/znlite/os-release /usr/lib/os-release
+ln -sf ../usr/lib/os-release /etc/os-release
+# Debian's bashrc resets PS1 after /etc/profile.d; apply our theme last as well.
+for bashrc in /etc/bash.bashrc /etc/skel/.bashrc /root/.bashrc; do
+    if ! grep -q '/etc/profile.d/znlite.sh' "$bashrc"; then
+        printf '\n[ ! -r /etc/profile.d/znlite.sh ] || . /etc/profile.d/znlite.sh\n' >> "$bashrc"
+    fi
+done
+# Never let the package's optional all-VT service displace the rescue consoles.
+systemctl disable kmscon.service kmsconvt@tty1.service 2>/dev/null || true
+systemctl enable getty@tty1.service getty@tty2.service
+fc-cache -f
+# Fail the build if vector support/font selection is missing instead of shipping
+# an image claiming to have vector text but silently using a bitmap engine.
+kmscon --help | grep -q 'font-engine'
+fc-match 'DejaVu Sans Mono' | grep -q 'DejaVuSansMono'
+test -x /usr/local/bin/znlite
+test -x /usr/local/bin/znfetch
+/usr/local/bin/znlite help >/dev/null
+/usr/local/bin/znfetch --logo-only --no-color >/dev/null

@@ -70,7 +70,8 @@ class KernelPolicyTests(unittest.TestCase):
                        'DRM_I915', 'SQUASHFS', 'BLK_DEV_SR', 'SERIAL_8250_CONSOLE', 'SUSPEND', 'MEMCG'):
             self.assertEqual(policy['CONFIG_' + symbol], 'y', symbol)
         self.assertEqual(policy['CONFIG_NETFILTER'], 'y')
-        for symbol in ('ZRAM', 'WIREGUARD', 'NF_TABLES', 'DM_CRYPT', 'CRYPTO_XTS', 'EXFAT_FS'):
+        for symbol in ('ZRAM', 'WIREGUARD', 'NF_TABLES', 'DM_CRYPT', 'CRYPTO_XTS', 'EXFAT_FS',
+                       'NFT_FIB_IPV4', 'NFT_FIB_IPV6', 'NFT_FIB_INET'):
             self.assertEqual(policy['CONFIG_' + symbol], 'm', symbol)
         self.assertEqual(policy['CONFIG_HZ_250'], 'y')
         self.assertEqual(policy['CONFIG_MODULE_FORCE_UNLOAD'], 'n')

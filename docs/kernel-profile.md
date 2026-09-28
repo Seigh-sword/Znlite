@@ -13,7 +13,7 @@ package/release avoids silently replacing the previous kernel and its modules.
 | Interactive work | Full preemption with dynamic switching, tickless idle, 250 Hz | A responsiveness-oriented compromise, not hard real-time or a benchmark result. `preempt=voluntary` can select the previous preemption model at boot. |
 | Memory pressure | Memory cgroup limits and modular zram, LZ4; logical swap = half RAM, capped at 2048 MiB | Compression consumes CPU and RAM; this is not extra physical memory and is not guaranteed to improve every workload. No disk writeback or arbitrary global swappiness change. |
 | Audio | HDA controller/codecs built as modules | Load the codecs actually needed, rather than every supported codec at boot. Keep HDMI/analog/USB support. |
-| Networking | nftables/connection tracking/NAT modules, WireGuard and TUN | Corrects the previous blanket `NETFILTER=n`, which prevented native firewalling and could break connection sharing. **No deny policy or VPN is auto-enabled.** Native nftables, not legacy iptables extensions. |
+| Networking | nftables/connection tracking/NAT/logging/rate-limit/route-lookup modules, WireGuard and TUN | Corrects the previous blanket `NETFILTER=n`, which prevented native firewalling and could break connection sharing. **No deny policy or VPN is auto-enabled.** Native nftables, not legacy iptables extensions. |
 | Laptop input | Acer WMI, Bay Trail/Braswell pinctrl, DesignWare I²C, ACPI HID | Helps hotkeys and I²C-connected input hardware; support still depends on the actual model/firmware. |
 | Storage | exFAT and dm-crypt modules with tools/initramfs integration | Supports removable media and encrypted devices. Does not encrypt, format, repartition or mount any existing disk automatically. Encryption/install workflows require separate testing. |
 | Hardening | CPU mitigations, KASLR, strong stack protector, read-only executable memory, usercopy/fortify checks, hardened/randomized slab freelists, allocation zeroing | Some defenses cost performance; they are deliberately retained. No `mitigations=off`, forced module loading, overclocking or unsafe power settings. |
@@ -66,7 +66,7 @@ a shipped image.
 
 A local native Kconfig comparison using the pinned source and GCC 12 resolved the
 previous profile to 1545 built-in / 89 module selections and revision 2 to 1507
-built-in / 165 module selections. These are counts of `=y`/`=m` Kconfig symbols,
+built-in / 171 module selections. These are counts of `=y`/`=m` Kconfig symbols,
 **not driver counts, bytes saved, boot-time measurements or a performance score**.
 The additional modules include new features and dependencies, so total disk usage
 may increase even while fewer drivers are resident by default. Compiler/version

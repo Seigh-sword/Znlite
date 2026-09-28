@@ -70,9 +70,22 @@ Live sessions are refused by default because upgrades consume the writable overl
 
 **Current scope:** this updates Debian-provided applications, libraries, firmware, and the installed backports packages. There is **no signed Znlite release repository yet**, so the custom `-znlite` kernel and files supplied by the image overlay (Znlite commands, branding, and configuration) are **not** updated by this command. They require a new verified image or a deliberately installed replacement package. This is not an automatic Znlite release-upgrade mechanism, and the custom kernel must not be assumed to receive Debian kernel security updates.
 
+## Laptop kernel profile (revision 2)
+
+The new `-znlite2` profile combines a leaner built-in driver set with dynamic
+preemption, capped LZ4 compressed swap, native nftables/WireGuard, exFAT/encrypted
+device support, laptop I²C/hotkey drivers, and stronger memory/sandbox protections.
+It keeps CPU mitigations, normal suspend, graphics, Wi-Fi and rescue consoles.
+There are no overclocking or "disable security for speed" settings.
+
+Run `znlite doctor` for a read-only memory/swap/CPU/security report. For the exact
+exclusions, zram opt-out, previous-kernel recovery, measurements and testing limits,
+read [the kernel profile notes](docs/kernel-profile.md). Faster workloads and
+battery-life improvements must be measured; they are not guaranteed.
+
 ## The Linux kernel source
 
-The kernel source is not copied into Git because the source archive is about 235 MB and its extracted tree is much larger. `kernel/source.lock` records the exact upstream tag, commit, download URL, and SHA-256. `scripts/build.sh` downloads the archive, verifies it, extracts it to `build/src/linux-6.12.111`, trims the generic x86-64 configuration, applies `kernel/znlite.fragment`, builds a Debian kernel package, and includes that package in the ISO. The upstream C source remains unchanged for now; source patches should follow a reproducible hardware bug or measured need.
+The kernel source is not copied into Git because the source archive is about 235 MB and its extracted tree is much larger. `kernel/source.lock` records the exact upstream tag, commit, download URL, and SHA-256. `scripts/build.sh` downloads the archive, verifies it, extracts it to `build/src/linux-6.12.111`, trims the generic x86-64 configuration, applies the three policy fragments under `kernel/`, validates the resolved configuration against every requested setting, builds a Debian kernel package, and includes that package in the ISO. The upstream C source remains unchanged for now; source patches should follow a reproducible hardware bug or measured need.
 
 GitHub Actions publishes the exact kernel source archive alongside the ISO and `.deb` package when a preview release is created. The kernel configuration and reproducible build steps are visible in this repository.
 
@@ -82,7 +95,7 @@ The build host needs Debian/Ubuntu packages for kernel compilation, Debian live-
 
 ```sh
 sudo apt update
-sudo apt install bc bison build-essential ca-certificates cpio curl debhelper dpkg-dev dwarves fakeroot file flex git grub-common grub-efi-amd64-bin grub-pc-bin initramfs-tools libelf-dev libssl-dev live-build make mtools qemu-system-x86 rsync sudo xorriso
+sudo apt install python3 bc bison build-essential ca-certificates cpio curl debhelper dpkg-dev dwarves fakeroot file flex git grub-common grub-efi-amd64-bin grub-pc-bin initramfs-tools libelf-dev libssl-dev live-build make mtools qemu-system-x86 rsync sudo xorriso
 ```
 
 Run the build with a conservative job count:
@@ -96,6 +109,8 @@ This build uses `sudo` for Debian live-build. It writes generated files under th
 - `build/output/znlite-live-x86_64.iso`
 - `build/output/znlite-kernel-6.12.111-amd64.deb`
 - `build/output/SHA256SUMS`
+- `build/output/kernel.config`
+- `build/output/kernel-audit.json`
 - `build/dl/v6.12.111.tar.gz`
 
 Run the configuration checks with `./scripts/check.sh` and the boot-wrapper and user-command regression tests with `python3 -m unittest discover -s tests -v` (Python 3 is required; QEMU/APT/video operations are mocked and the tests neither boot an image nor upgrade the host). GitHub Actions runs on pushes, pull requests, and manual dispatches. It performs these checks, builds the ISO and kernel package, uploads the ISO, kernel package, and verified upstream source archive as candidate artifacts, and boots the ISO under QEMU. Artifacts are retained even if the boot test fails; only artifacts from a successful run should be published as a preview GitHub Release. Failed runs also upload the configuration, test, build, and QEMU logs as `znlite-failure-diagnostics`.

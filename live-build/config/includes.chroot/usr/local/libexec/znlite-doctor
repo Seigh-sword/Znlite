@@ -1,0 +1,40 @@
+#!/bin/sh
+# Read-only report. No sudo, tuning writes, network calls, or module loading.
+set -eu
+printf 'Znlite system report\nKernel: %s\n' "$(uname -r)"
+printf '\nMemory (KiB):\n'
+grep -E '^(MemTotal|MemAvailable|SwapTotal|SwapFree):' /proc/meminfo
+printf '\nActive swap:\n'
+if command -v swapon >/dev/null 2>&1; then swapon --show || true; else cat /proc/swaps; fi
+printf '\nCompressed RAM swap:\n'
+if command -v zramctl >/dev/null 2>&1; then
+    zramctl || true
+else
+    printf '%s\n' 'zramctl is unavailable; check /sys/block/zram*/mm_stat.'
+fi
+printf '\nCPU frequency policy:\n'
+found=false
+for policy in /sys/devices/system/cpu/cpufreq/policy*; do
+    [ -d "$policy" ] || continue
+    found=true
+    printf '%s: ' "${policy##*/}"
+    if [ -r "$policy/scaling_governor" ]; then cat "$policy/scaling_governor"; else printf 'unavailable\n'; fi
+done
+if [ "$found" = false ]; then printf '%s\n' 'No cpufreq policy exposed (normal in some VMs).'; fi
+printf '\nSecurity:\n'
+for value in /sys/kernel/security/lsm /sys/module/apparmor/parameters/enabled /proc/sys/kernel/randomize_va_space; do
+    if [ -r "$value" ]; then printf '%s: %s\n' "$value" "$(cat "$value")"; fi
+done
+case " $(cat /proc/cmdline) " in
+    *' mitigations=off '*) printf '%s\n' 'WARNING: CPU mitigations were explicitly disabled at boot.' ;;
+esac
+printf '\nOn-demand capabilities (loaded is not the same as configured):\n'
+for module in zram nf_tables wireguard dm_crypt exfat; do
+    if [ -d "/sys/module/$module" ]; then
+        printf '%s: loaded\n' "$module"
+    else
+        printf '%s: not loaded (may still be available)\n' "$module"
+    fi
+done
+printf '\nKernel configuration: /boot/config-%s\n' "$(uname -r)"
+printf '%s\n' 'No settings were changed. Check journalctl -b for driver/service failures.'

@@ -6,6 +6,8 @@ DOWNLOAD_DIR="$BUILD_ROOT/dl"
 SOURCE_PARENT="$BUILD_ROOT/src"
 KERNEL_LOCK="$ROOT/kernel/source.lock"
 KERNEL_VERSION=$(sed -n 's/^version=//p' "$KERNEL_LOCK")
+KERNEL_PACKAGE_REVISION=$(sed -n 's/^package_revision=//p' "$KERNEL_LOCK")
+KERNEL_LOCALVERSION=$(sed -n 's/^localversion=//p' "$KERNEL_LOCK")
 KERNEL_ARCHIVE="$DOWNLOAD_DIR/v$KERNEL_VERSION.tar.gz"
 KERNEL_URL=$(sed -n 's/^archive_url=//p' "$KERNEL_LOCK")
 KERNEL_SHA256=$(sed -n 's/^sha256=//p' "$KERNEL_LOCK")
@@ -13,7 +15,7 @@ KERNEL_SOURCE="$SOURCE_PARENT/linux-$KERNEL_VERSION"
 LIVE_BUILD_DIR="$BUILD_ROOT/live-build"
 OUTPUT_DIR="$BUILD_ROOT/output"
 JOBS=${JOBS:-2}
-for command in curl sha256sum tar make lb sudo dpkg-deb find sed; do
+for command in curl sha256sum tar make lb sudo dpkg-deb find sed python3; do
     if ! command -v "$command" >/dev/null 2>&1; then
         printf 'Missing build dependency: %s\n' "$command" >&2
         exit 1
@@ -32,53 +34,14 @@ if [ ! -f "$KERNEL_SOURCE/Makefile" ]; then
     mkdir -p "$KERNEL_SOURCE"
     tar --extract --gzip --file "$KERNEL_ARCHIVE" --strip-components=1 --directory "$KERNEL_SOURCE" --no-same-owner
 fi
-make -C "$KERNEL_SOURCE" ARCH=x86 x86_64_defconfig
-(
-    cd "$KERNEL_SOURCE"
-    ./scripts/config \
-        --disable HIBERNATION \
-        --disable KEXEC \
-        --disable CRASH_DUMP \
-        --disable DEBUG_KERNEL \
-        --disable DEBUG_INFO \
-        --disable DEBUG_INFO_BTF \
-        --disable DEBUG_INFO_DWARF5 \
-        --disable FTRACE \
-        --disable KPROBES \
-        --disable KUNIT \
-        --disable KVM \
-        --disable KVM_GUEST \
-        --disable HYPERVISOR_GUEST \
-        --disable PARAVIRT \
-        --disable NET_9P \
-        --disable NETFILTER \
-        --disable VIRTIO_PCI \
-        --disable VIRTIO_BLK \
-        --disable SCSI_VIRTIO \
-        --disable VIRTIO_NET \
-        --disable VIRTIO_CONSOLE \
-        --disable VIRTIO_BALLOON \
-        --disable VIRTIO_INPUT \
-        --disable VIRTIO_MMIO \
-        --disable VIRTIO_MMIO_CMDLINE_DEVICES \
-        --disable DRM_VIRTIO_GPU \
-        --disable DRM_QXL \
-        --disable DRM_BOCHS \
-        --disable NET_9P_VIRTIO \
-        --disable PM_DEBUG \
-        --disable CPU_FREQ_DEFAULT_GOV_USERSPACE \
-        --enable HZ_250
-    ARCH=x86 ./scripts/kconfig/merge_config.sh -m .config "$ROOT/kernel/znlite.fragment"
-    ./scripts/config --set-str LOCALVERSION ""
-    make ARCH=x86 olddefconfig
-)
-KERNEL_RELEASE=$(make -s -C "$KERNEL_SOURCE" ARCH=x86 LOCALVERSION=-znlite kernelrelease)
-if [ "$KERNEL_RELEASE" != "$KERNEL_VERSION-znlite" ]; then
+"$ROOT/scripts/configure-kernel.sh" "$KERNEL_SOURCE" "$OUTPUT_DIR"
+KERNEL_RELEASE=$(make -s -C "$KERNEL_SOURCE" ARCH=x86 LOCALVERSION="$KERNEL_LOCALVERSION" kernelrelease)
+if [ "$KERNEL_RELEASE" != "$KERNEL_VERSION$KERNEL_LOCALVERSION" ]; then
     printf 'Unexpected kernel release string: %s\n' "$KERNEL_RELEASE" >&2
     exit 1
 fi
 find "$SOURCE_PARENT" -maxdepth 1 -type f -name 'linux-image-*.deb' -delete
-make -C "$KERNEL_SOURCE" -j"$JOBS" ARCH=x86 LOCALVERSION=-znlite KDEB_PKGVERSION="$KERNEL_VERSION-1" bindeb-pkg
+make -C "$KERNEL_SOURCE" -j"$JOBS" ARCH=x86 LOCALVERSION="$KERNEL_LOCALVERSION" KDEB_PKGVERSION="$KERNEL_VERSION-$KERNEL_PACKAGE_REVISION" bindeb-pkg
 KERNEL_DEB=$(find "$SOURCE_PARENT" -maxdepth 1 -type f -name "linux-image-${KERNEL_RELEASE}_*_amd64.deb" ! -name '*dbg*' -print -quit)
 if [ -z "$KERNEL_DEB" ]; then
     printf '%s\n' 'The kernel build completed without producing a Debian image package.' >&2
@@ -111,7 +74,7 @@ cp "$ISO" "$OUTPUT_DIR/znlite-live-x86_64.iso"
 cp "$KERNEL_DEB" "$OUTPUT_DIR/znlite-kernel-6.12.111-amd64.deb"
 (
     cd "$OUTPUT_DIR"
-    sha256sum znlite-live-x86_64.iso znlite-kernel-6.12.111-amd64.deb > SHA256SUMS
+    sha256sum znlite-live-x86_64.iso znlite-kernel-6.12.111-amd64.deb kernel.config kernel-audit.json > SHA256SUMS
 )
 printf '%s\n' 'Znlite live ISO and custom kernel package built successfully.'
 printf 'ISO: %s\n' "$OUTPUT_DIR/znlite-live-x86_64.iso"

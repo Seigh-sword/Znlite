@@ -29,7 +29,7 @@ jobs:
       - name: Install build dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y bc bison build-essential ca-certificates cpio curl debhelper debootstrap dpkg-dev dwarves fakeroot file flex git grub-common grub-efi-amd64-bin grub-pc-bin initramfs-tools libelf-dev libssl-dev live-build make mtools qemu-system-x86 rsync sudo xorriso
+          sudo apt-get install -y python3 bc bison build-essential ca-certificates cpio curl debhelper debootstrap dpkg-dev dwarves fakeroot file flex git grub-common grub-efi-amd64-bin grub-pc-bin initramfs-tools libelf-dev libssl-dev live-build make mtools qemu-system-x86 rsync sudo xorriso
 
       - name: Install Debian Trixie archive keyring and live-build
         run: |
@@ -60,9 +60,9 @@ jobs:
 
       - name: Verify kernel package metadata
         run: |
-          test "$(dpkg-deb --field build/output/znlite-kernel-6.12.111-amd64.deb Version)" = "6.12.111-1"
+          test "$(dpkg-deb --field build/output/znlite-kernel-6.12.111-amd64.deb Version)" = "6.12.111-2"
           test "$(dpkg-deb --field build/output/znlite-kernel-6.12.111-amd64.deb Architecture)" = "amd64"
-          dpkg-deb --field build/output/znlite-kernel-6.12.111-amd64.deb Package | grep -E '^linux-image-6\.12\.111-znlite$'
+          dpkg-deb --field build/output/znlite-kernel-6.12.111-amd64.deb Package | grep -E '^linux-image-6\.12\.111-znlite2$'
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v6
@@ -72,6 +72,8 @@ jobs:
             build/output/znlite-live-x86_64.iso
             build/output/znlite-kernel-6.12.111-amd64.deb
             build/output/SHA256SUMS
+            build/output/kernel.config
+            build/output/kernel-audit.json
             build/dl/v6.12.111.tar.gz
             build/dl/v6.12.111.tar.gz.sha256
           if-no-files-found: error
@@ -101,6 +103,8 @@ jobs:
             build/check.log
             build/tests.log
             build/build.log
+            build/output/kernel.config
+            build/output/kernel-audit.json
             build/output/qemu-boot.log
             build/output/qemu-boot-stderr.log
           if-no-files-found: ignore

@@ -5,6 +5,7 @@ usage() {
     cat <<'HELP'
 Znlite / Aurora
 
+  znlite doctor                   Read-only memory, swap, drivers and security report
   znlite info                     System info and mascot (also: znfetch / neofetch)
   znlite welcome [--animate]       Full mascot; animation is optional
   sudo znlite update              Refresh APT and review a full package upgrade
@@ -35,6 +36,10 @@ main() {
     command=${1:-help}
     if (( $# )); then shift; fi
     case "$command" in
+        doctor)
+            if (( $# )); then printf 'Usage: znlite doctor\n' >&2; exit 2; fi
+            exec "$bin/../libexec/znlite-doctor"
+            ;;
         info) exec "$bin/znfetch" "$@" ;;
         welcome) exec "$bin/znfetch" --full "$@" ;;
         help|--help|-h) usage ;;

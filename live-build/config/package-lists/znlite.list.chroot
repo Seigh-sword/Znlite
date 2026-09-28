@@ -42,3 +42,10 @@ kbd
 kmscon/trixie-backports
 libtsm4/trixie-backports
 xkb-data
+apparmor
+cryptsetup
+cryptsetup-initramfs
+exfatprogs
+nftables
+systemd-zram-generator
+wireguard-tools

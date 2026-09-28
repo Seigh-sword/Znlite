@@ -21,13 +21,14 @@ grep -Fx 'version=6.12.111' "$ROOT/kernel/source.lock" >/dev/null
 grep -Fx 'commit=e2acc2211022246c77740d5df08265cc27eedcc5' "$ROOT/kernel/source.lock" >/dev/null
 grep -F 'sha256=' "$ROOT/kernel/source.lock" >/dev/null
 grep -F 'CONFIG_LOCALVERSION=""' "$ROOT/kernel/znlite.fragment" >/dev/null
-grep -F 'LOCALVERSION=-znlite' "$ROOT/scripts/build.sh" >/dev/null
+grep -Fx 'localversion=-znlite2' "$ROOT/kernel/source.lock" >/dev/null
+grep -Fx 'package_revision=2' "$ROOT/kernel/source.lock" >/dev/null
 grep -F 'CONFIG_DRM_I915=y' "$ROOT/kernel/znlite.fragment" >/dev/null
 grep -F 'CONFIG_ACPI_BATTERY=y' "$ROOT/kernel/znlite.fragment" >/dev/null
 grep -F 'CONFIG_SQUASHFS=y' "$ROOT/kernel/znlite.fragment" >/dev/null
 grep -F 'CONFIG_HZ_250=y' "$ROOT/kernel/znlite.fragment" >/dev/null
-grep -F -- '--disable HYPERVISOR_GUEST' "$ROOT/scripts/build.sh" >/dev/null
-grep -F -- '--disable DEBUG_INFO' "$ROOT/scripts/build.sh" >/dev/null
+grep -Fx 'CONFIG_HYPERVISOR_GUEST=n' "$ROOT/kernel/trim.fragment" >/dev/null
+grep -Fx 'CONFIG_DEBUG_INFO=n' "$ROOT/kernel/trim.fragment" >/dev/null
 grep -F -- '--linux-packages none' "$ROOT/live-build/auto/config" >/dev/null
 grep -F -- 'boot=live components console=tty0 console=ttyS0,115200n8' "$ROOT/live-build/auto/config" >/dev/null
 grep -Fx 'vector' "$ROOT/live-build/config/includes.chroot/etc/znlite/console-mode" >/dev/null
@@ -39,6 +40,6 @@ if grep -E '^(xorg|task-.*desktop|xfce|lxde|lxqt|gnome|kde|mate|lightdm|sddm)$' 
     printf '%s\n' 'Desktop packages must remain outside the text-only image.' >&2
     exit 1
 fi
-awk -F= 'BEGIN { result = 0 } !/^CONFIG_[A-Za-z0-9_]+=/ { result = 1 } seen[$1]++ { result = 1 } END { exit result }' "$ROOT/kernel/znlite.fragment"
+python3 "$ROOT/scripts/audit-kernel.py" --lint
 git -C "$ROOT" diff --check
 printf '%s\n' 'Znlite configuration checks passed.'

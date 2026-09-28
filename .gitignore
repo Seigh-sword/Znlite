@@ -6,3 +6,6 @@
 *.qcow2
 *.vmlinuz
 *.bzImage
+
+# Python regression-test bytecode
+__pycache__/

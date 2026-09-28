@@ -1,6 +1,6 @@
 #!/bin/sh
 set -eu
-ROOT=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+ROOT=$(CDPATH='' cd -- "$(dirname -- "$0")/.." && pwd)
 BUILD_ROOT="$ROOT/build"
 DOWNLOAD_DIR="$BUILD_ROOT/dl"
 SOURCE_PARENT="$BUILD_ROOT/src"

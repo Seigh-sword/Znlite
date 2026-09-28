@@ -1,7 +1,12 @@
 #!/bin/sh
 set -eu
-ROOT=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
-sh -n "$ROOT/scripts/build.sh" "$ROOT/scripts/smoke-test.sh" "$ROOT/live-build/auto/config"
+ROOT=$(CDPATH='' cd -- "$(dirname -- "$0")/.." && pwd)
+for script in "$ROOT"/scripts/*.sh "$ROOT/live-build/auto/config"; do
+    sh -n "$script"
+done
+# A zero/missing timeout leaves unattended BIOS boots stuck at the menu.
+awk '$1 == "timeout" { timeout = $2 } END { exit !(timeout > 0 && timeout <= 100) }' \
+    "$ROOT/live-build/config/bootloaders/isolinux/isolinux.cfg"
 grep -Fx 'version=6.12.111' "$ROOT/kernel/source.lock" >/dev/null
 grep -Fx 'commit=e2acc2211022246c77740d5df08265cc27eedcc5' "$ROOT/kernel/source.lock" >/dev/null
 grep -F 'sha256=' "$ROOT/kernel/source.lock" >/dev/null

@@ -49,7 +49,9 @@ This build uses `sudo` for Debian live-build. It writes generated files under th
 - `build/output/SHA256SUMS`
 - `build/dl/v6.12.111.tar.gz`
 
-Run the configuration checks with `./scripts/check.sh`. GitHub Actions performs these checks, builds the ISO and kernel package, boots the ISO under QEMU, and uploads the ISO, kernel package, and verified upstream source archive as artifacts. A successful artifact can then be published as a preview GitHub Release.
+Run the configuration checks with `./scripts/check.sh` and the smoke-test wrapper's regression tests with `python3 -m unittest discover -s tests -v` (Python 3 is required; these tests use a fake QEMU and do not boot an image). GitHub Actions runs on pushes, pull requests, and manual dispatches. It performs these checks, builds the ISO and kernel package, uploads the ISO, kernel package, and verified upstream source archive as candidate artifacts, and boots the ISO under QEMU. Artifacts are retained even if the boot test fails; only artifacts from a successful run should be published as a preview GitHub Release. Failed runs also upload the configuration, test, build, and QEMU logs as `znlite-failure-diagnostics`.
+
+The BIOS menu boots its default live entry after five seconds without keyboard input. Run `./scripts/smoke-test.sh` to test the built ISO locally. The test uses headless QEMU software emulation and requires a serial login prompt, allowing up to 300 seconds for slow CI hosts. Override that limit with `QEMU_TIMEOUT=600 ./scripts/smoke-test.sh` if needed. No VNC server or host audio service is required.
 
 ## Hardware details needed
 

@@ -2,12 +2,15 @@ name: Znlite live image
 
 on:
   push:
-    branches:
-      - arena/01a0e2b8-znlite
+  pull_request:
   workflow_dispatch:
 
 permissions:
   contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build:
@@ -15,14 +18,13 @@ jobs:
     timeout-minutes: 180
     steps:
       - name: Check out Znlite
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Cache Linux source archive
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: build/dl
-          key: znlite-linux-6.12.111-${{ runner.os }}
-          restore-keys: znlite-linux-6.12.111-${{ runner.os }}-
+          key: znlite-linux-${{ runner.os }}-${{ hashFiles('kernel/source.lock') }}
 
       - name: Install build dependencies
         run: |
@@ -47,6 +49,7 @@ jobs:
         run: |
           mkdir -p build
           ./scripts/check.sh 2>&1 | tee build/check.log
+          python3 -m unittest discover -s tests -v 2>&1 | tee build/tests.log
 
       - name: Build text-only live image and custom kernel package
         shell: bash
@@ -62,7 +65,7 @@ jobs:
           dpkg-deb --field build/output/znlite-kernel-6.12.111-amd64.deb Package | grep -E '^linux-image-6\.12\.111-znlite$'
 
       - name: Upload build artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: znlite-x86_64-text-only
           path: |
@@ -81,24 +84,23 @@ jobs:
         if: failure()
         shell: bash
         run: |
-          for log_file in build/check.log build/build.log build/output/qemu-boot.log build/output/qemu-boot-stderr.log; do
+          for log_file in build/check.log build/tests.log build/build.log build/output/qemu-boot.log build/output/qemu-boot-stderr.log; do
             if [ -f "$log_file" ]; then
-              snippet=$(tail -n 100 "$log_file" | sed ':a;N;$!ba;s/\n/ | /g')
-              for start in 0 3000 6000 9000 12000 15000; do
-                part=${snippet:start:3000}
-                if [ -n "$part" ]; then
-                  printf '::error title=Build diagnostic part %s::%s\n' "$((start / 3000 + 1))" "$part"
-                fi
-              done
+              printf '::group::%s (last 100 lines)\n' "$log_file"
+              tail -n 100 "$log_file"
+              printf '::endgroup::\n'
             fi
           done
 
-      - name: Upload QEMU failure diagnostics
+      - name: Upload failure diagnostics
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
-          name: znlite-qemu-failure-diagnostics
+          name: znlite-failure-diagnostics
           path: |
+            build/check.log
+            build/tests.log
+            build/build.log
             build/output/qemu-boot.log
             build/output/qemu-boot-stderr.log
           if-no-files-found: ignore

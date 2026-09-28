@@ -15,7 +15,7 @@ lb config noauto \
     --firmware-binary true \
     --firmware-chroot true \
     --apt-recommends false \
-    --debootstrap-options "--variant=minbase" \
+    --debootstrap-options "--variant=minbase --include=ca-certificates" \
     --memtest none \
     --bootappend-live "boot=live components console=tty0 console=ttyS0,115200n8" \
     --iso-application "Znlite Linux" \

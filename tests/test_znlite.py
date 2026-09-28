@@ -3,6 +3,7 @@ import os
 from pathlib import Path
 import re
 import subprocess
+import tempfile
 import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -16,6 +17,22 @@ def run(*args, env=None):
         args, env={**os.environ, **(env or {})},
         capture_output=True, text=True, timeout=10,
     )
+
+
+class BuildConfigTests(unittest.TestCase):
+    def test_https_certificates_are_installed_during_bootstrap(self):
+        # The main package list is processed AFTER HTTPS archive indexes.
+        with tempfile.TemporaryDirectory() as directory:
+            fake_lb = Path(directory) / "lb"
+            fake_lb.write_text('#!/bin/sh\nprintf "%s\\n" "$@"\n')
+            fake_lb.chmod(0o755)
+            result = run(str(ROOT / "live-build/auto/config"),
+                         env={"PATH": f"{directory}:{os.environ['PATH']}"})
+        self.assertEqual(result.returncode, 0, result.stderr)
+        args = result.stdout.splitlines()
+        options = args[args.index("--debootstrap-options") + 1].split()
+        self.assertIn("--include=ca-certificates", options)
+        self.assertIn("--variant=minbase", options)
 
 
 class FetchTests(unittest.TestCase):

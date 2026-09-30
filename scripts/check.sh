@@ -39,9 +39,11 @@ grep -Fx 'kmscon/trixie-backports' "$ROOT/live-build/config/package-lists/znlite
 grep -Fx 'fonts-dejavu-core' "$ROOT/live-build/config/package-lists/znlite.list.chroot" >/dev/null
 grep -Fx 'apt' "$ROOT/live-build/config/package-lists/znlite.list.chroot" >/dev/null
 grep -Fx 'network-manager' "$ROOT/live-build/config/package-lists/znlite.list.chroot" >/dev/null
-for package in sway greetd foot waybar libgl1-mesa-dri pipewire-audio python3 gpgv; do
+for package in sway greetd foot waybar libgl1-mesa-dri pipewire-audio python3 gpgv lxpolkit; do
     grep -Fx "$package" "$ROOT/live-build/config/package-lists/znlite.list.chroot" >/dev/null
 done
+
+! grep -Fx 'policykit-1-gnome' "$ROOT/live-build/config/package-lists/znlite.list.chroot" >/dev/null # absent from Trixie
 
 python3 "$ROOT/scripts/audit-kernel.py" --lint
 git -C "$ROOT" diff --check

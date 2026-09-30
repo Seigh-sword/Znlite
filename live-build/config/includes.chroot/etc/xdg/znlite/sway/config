@@ -20,7 +20,7 @@ input type:touchpad {
 # Activate the portals with the actual compositor environment, not just login's.
 exec dbus-update-activation-environment --systemd WAYLAND_DISPLAY SWAYSOCK XDG_CURRENT_DESKTOP
 exec mako
-exec /usr/lib/policykit-1-gnome/polkit-gnome-authentication-agent-1
+exec lxpolkit
 exec nm-applet --indicator
 exec swayidle -w timeout 600 'swaylock -f -c 080f18' before-sleep 'swaylock -f -c 080f18'
 bar {

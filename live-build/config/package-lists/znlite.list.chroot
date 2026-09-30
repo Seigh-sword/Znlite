@@ -70,7 +70,7 @@ mesa-vulkan-drivers
 greetd
 libpam-systemd
 dbus-user-session
-policykit-1-gnome
+lxpolkit
 polkitd
 thunar
 pavucontrol

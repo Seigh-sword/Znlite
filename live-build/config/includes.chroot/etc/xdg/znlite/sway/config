@@ -1,0 +1,80 @@
+# Znlite is yours. Run `znlite customize init` for a private editable copy.
+set $mod Mod4
+set $term foot
+set $menu fuzzel
+font pango:DejaVu Sans 10
+floating_modifier $mod normal
+xwayland enable
+focus_follows_mouse yes
+default_border pixel 2
+gaps inner 8
+gaps outer 4
+output * bg #080f18 solid_color
+client.focused #69ebe8 #132734 #ebfdff #69ebe8 #69ebe8
+client.unfocused #233746 #0d1722 #91a9bb #233746 #233746
+client.urgent #ff748b #331d2b #ebfdff #ff748b #ff748b
+input type:touchpad {
+    tap enabled
+    natural_scroll enabled
+}
+# Activate the portals with the actual compositor environment, not just login's.
+exec dbus-update-activation-environment --systemd WAYLAND_DISPLAY SWAYSOCK XDG_CURRENT_DESKTOP
+exec mako
+exec /usr/lib/policykit-1-gnome/polkit-gnome-authentication-agent-1
+exec nm-applet --indicator
+exec swayidle -w timeout 600 'swaylock -f -c 080f18' before-sleep 'swaylock -f -c 080f18'
+bar {
+    swaybar_command waybar
+}
+bindsym $mod+Return exec $term
+bindsym $mod+d exec $menu
+bindsym $mod+e exec thunar
+bindsym $mod+Shift+q kill
+bindsym $mod+Shift+c reload
+bindsym $mod+Shift+e exec swaynag -t warning -m 'End your Znlite session?' -B 'Log out' 'swaymsg exit'
+bindsym $mod+Control+l exec swaylock -f -c 080f18
+bindsym $mod+h focus left
+bindsym $mod+j focus down
+bindsym $mod+k focus up
+bindsym $mod+l focus right
+bindsym $mod+Shift+h move left
+bindsym $mod+Shift+j move down
+bindsym $mod+Shift+k move up
+bindsym $mod+Shift+l move right
+bindsym $mod+b splith
+bindsym $mod+v splitv
+bindsym $mod+f fullscreen toggle
+bindsym $mod+space focus mode_toggle
+bindsym $mod+Shift+space floating toggle
+bindsym $mod+s layout stacking
+bindsym $mod+w layout tabbed
+bindsym $mod+t layout toggle split
+bindsym $mod+1 workspace number 1
+bindsym $mod+2 workspace number 2
+bindsym $mod+3 workspace number 3
+bindsym $mod+4 workspace number 4
+bindsym $mod+5 workspace number 5
+bindsym $mod+Shift+1 move container to workspace number 1
+bindsym $mod+Shift+2 move container to workspace number 2
+bindsym $mod+Shift+3 move container to workspace number 3
+bindsym $mod+Shift+4 move container to workspace number 4
+bindsym $mod+Shift+5 move container to workspace number 5
+bindsym $mod+r mode resize
+mode resize {
+    bindsym h resize shrink width 10 px
+    bindsym j resize grow height 10 px
+    bindsym k resize shrink height 10 px
+    bindsym l resize grow width 10 px
+    bindsym Return mode default
+    bindsym Escape mode default
+}
+bindsym XF86AudioRaiseVolume exec wpctl set-volume -l 1 @DEFAULT_AUDIO_SINK@ 5%+
+bindsym XF86AudioLowerVolume exec wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-
+bindsym XF86AudioMute exec wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle
+bindsym XF86MonBrightnessUp exec brightnessctl set +5%
+bindsym XF86MonBrightnessDown exec brightnessctl set 5%-
+# Screenshot goes to the clipboard only when explicitly requested.
+bindsym Print exec grim -g "$(slurp)" - | wl-copy
+# Personal tweaks load last. Keep this file outside the distribution defaults.
+include "${XDG_CONFIG_HOME:-$HOME/.config}/znlite/preset.conf"
+include "${XDG_CONFIG_HOME:-$HOME/.config}/znlite/sway.local.conf"

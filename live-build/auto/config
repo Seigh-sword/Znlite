@@ -8,7 +8,7 @@ lb config noauto \
     --debian-installer-distribution trixie \
     --debian-installer-gui false \
     --architecture amd64 \
-    --archive-areas "main contrib non-free-firmware" \
+    --archive-areas "main contrib non-free non-free-firmware" \
     --binary-images iso-hybrid \
     --bootloaders "syslinux grub-efi" \
     --linux-packages none \
@@ -20,5 +20,5 @@ lb config noauto \
     --bootappend-live "boot=live components console=tty0 console=ttyS0,115200n8" \
     --iso-application "Znlite Linux" \
     --iso-publisher "Znlite Linux project" \
-    --iso-volume "ZNLITE_TEXT" \
+    --iso-volume "ZNLITE_AURORA" \
     "${@}"

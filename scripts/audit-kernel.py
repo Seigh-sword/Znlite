@@ -13,7 +13,7 @@ import sys
 
 ROOT = Path(__file__).resolve().parents[1]
 FRAGMENTS = [ROOT / "kernel" / name for name in
-             ("trim.fragment", "znlite.fragment", "features.fragment")]
+             ("trim.fragment", "znlite.fragment", "features.fragment", "platform.fragment")]
 ASSIGNMENT = re.compile(r'^(CONFIG_[A-Za-z0-9_]+)=(y|m|n|[0-9]+|0x[0-9a-fA-F]+|"[^"\n]*")$')
 DISABLED = re.compile(r"^# (CONFIG_[A-Za-z0-9_]+) is not set$")
 SYMBOL = re.compile(r"^\s*(?:menu)?config\s+([A-Za-z0-9_]+)\s*$", re.MULTILINE)

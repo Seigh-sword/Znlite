@@ -12,7 +12,7 @@ make -C "$SOURCE" ARCH=x86 x86_64_defconfig
 (
     cd "$SOURCE"
     ARCH=x86 ./scripts/kconfig/merge_config.sh -m .config \
-        "$ROOT/kernel/trim.fragment" "$ROOT/kernel/znlite.fragment" "$ROOT/kernel/features.fragment"
+        "$ROOT/kernel/trim.fragment" "$ROOT/kernel/znlite.fragment" "$ROOT/kernel/features.fragment" "$ROOT/kernel/platform.fragment"
     make ARCH=x86 olddefconfig
 )
 # Validate the RESOLVED configuration. Merely finding a symbol in a fragment

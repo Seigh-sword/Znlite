@@ -5,6 +5,14 @@ usage() {
     cat <<'HELP'
 Znlite / Aurora
 
+  znlite customize init           Copy editable desktop defaults (never overwrite)
+  znlite customize preset NAME    Choose aurora or minimal; reload Super+Shift+C
+  znlite mirror status            Show automatic mirror-selection status
+  sudo znlite mirror select       Benchmark and select a signed Debian mirror now
+  sudo znlite mirror auto on|off   Enable/disable boot-time selection
+  znlite session status           Show the default boot target
+  sudo znlite session graphical   Boot to Wayland next time
+  sudo znlite session console     Boot to the console next time
   znlite doctor                   Read-only memory, swap, drivers and security report
   znlite info                     System info and mascot (also: znfetch / neofetch)
   znlite welcome [--animate]       Full mascot; animation is optional
@@ -12,11 +20,12 @@ Znlite / Aurora
   sudo znlite update --check      Refresh APT, then simulate changes only
   sudo znlite update --yes        Explicitly accept APT's upgrade confirmation
   sudo znlite update --allow-live Allow temporary updates in a live session
-  znlite fonts status            Show the configured console default
-  sudo znlite fonts vector       Use scalable TrueType text on tty1 next boot
+  znlite fonts status            Show the rescue-console font default
+  sudo znlite fonts vector       Use scalable TrueType text in console mode next boot
   sudo znlite fonts raster       Use the kernel's bitmap console next boot
 
-Ctrl+Alt+F2 always opens the raster rescue console. Serial consoles stay raster.
+Wayland is the default session. Ctrl+Alt+F2 opens the raster rescue console.
+Console font settings apply to console-only boots, not Wayland fonts.
 Updates use the configured signed APT repositories. There is no Znlite release
 repository yet: the custom kernel and Znlite tools/branding are NOT upgraded by
 this command. It does not perform major Debian release upgrades or autoremove.
@@ -36,6 +45,21 @@ main() {
     command=${1:-help}
     if (( $# )); then shift; fi
     case "$command" in
+        customize) exec "$bin/../libexec/znlite-customize.py" "$@" ;;
+        mirror) exec "$bin/../libexec/znlite-mirrors.py" "$@" ;;
+        session)
+            if (( $# > 1 )); then printf 'Usage: znlite session [status|graphical|console]\n' >&2; exit 2; fi
+            case "${1:-status}" in
+                status) systemctl get-default ;;
+                graphical|console)
+                    require_root
+                    if [[ $1 == graphical ]]; then target=graphical.target; else target=multi-user.target; fi
+                    systemctl set-default "$target"
+                    printf 'Next boot: %s. Current sessions were not stopped.\n' "$target"
+                    ;;
+                *) printf 'Unknown session mode\n' >&2; exit 2 ;;
+            esac
+            ;;
         doctor)
             if (( $# )); then printf 'Usage: znlite doctor\n' >&2; exit 2; fi
             exec "$bin/../libexec/znlite-doctor"
@@ -80,7 +104,7 @@ main() {
             if (( $# > 1 )); then usage >&2; exit 2; fi
             case "${1:-status}" in
                 status)
-                    printf 'Default on tty1: %s\n' "$(cat /etc/znlite/console-mode 2>/dev/null || printf 'raster (not configured)')"
+                    printf 'Console-only default on tty1: %s\n' "$(cat /etc/znlite/console-mode 2>/dev/null || printf 'raster (not configured)')"
                     printf '%s\n' 'Vector: Kmscon + FreeType + DejaVu Sans Mono.' \
                         'Raster: Linux VT bitmap fonts. Rescue: Ctrl+Alt+F2.'
                     ;;

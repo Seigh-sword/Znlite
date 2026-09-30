@@ -1,0 +1,10 @@
+[Unit]
+Description=Select a Debian mirror in the background once per boot
+
+[Timer]
+OnBootSec=30s
+AccuracySec=10s
+Unit=znlite-mirrors.service
+
+[Install]
+WantedBy=timers.target

@@ -24,3 +24,25 @@ test -x /usr/local/bin/znlite
 test -x /usr/local/bin/znfetch
 /usr/local/bin/znlite help >/dev/null
 /usr/local/bin/znfetch --logo-only --no-color >/dev/null
+
+# Sway is the default; authenticated greeter on tty1, raster rescue on tty2.
+if ! id _znlite-greeter >/dev/null 2>&1; then
+    useradd --system --home-dir /var/lib/greetd --no-create-home --shell /usr/sbin/nologin _znlite-greeter
+fi
+test -x /usr/sbin/agreety
+test -x /usr/bin/sway
+systemctl disable greetd.service 2>/dev/null || true
+mkdir -p /etc/systemd/system/graphical.target.wants
+ln -sf /usr/lib/systemd/system/greetd.service /etc/systemd/system/graphical.target.wants/greetd.service
+systemctl enable znlite-mirrors.timer
+systemctl set-default graphical.target
+mkdir -p /var/lib/znlite-mirrors
+
+# Parse the actual shipped Sway config as an unprivileged user. This checks the
+# compositor grammar, not physical GPU support. No user session is launched.
+runtime=$(mktemp -d /tmp/znlite-sway-validate.XXXXXX)
+chown nobody:nogroup "$runtime"
+chmod 700 "$runtime"
+runuser -u nobody -- env XDG_RUNTIME_DIR="$runtime" WLR_BACKENDS=headless WLR_RENDERER=pixman \
+    sway --validate --config /etc/xdg/znlite/sway/config
+rm -rf -- "$runtime"

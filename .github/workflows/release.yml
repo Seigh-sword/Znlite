@@ -51,26 +51,30 @@ jobs:
           ./scripts/check.sh 2>&1 | tee build/check.log
           python3 -m unittest discover -s tests -v 2>&1 | tee build/tests.log
 
-      - name: Build text-only live image and custom kernel package
+      - name: Build Aurora Wayland live image and custom kernel package
         shell: bash
         run: |
           set -o pipefail
           mkdir -p build
-          JOBS=2 ./scripts/build.sh 2>&1 | tee build/build.log
+          JOBS="$(nproc)" ./scripts/build.sh 2>&1 | tee build/build.log
 
       - name: Verify kernel package metadata
         run: |
-          test "$(dpkg-deb --field build/output/znlite-kernel-6.12.111-amd64.deb Version)" = "6.12.111-2"
+          test "$(dpkg-deb --field build/output/znlite-kernel-6.12.111-amd64.deb Version)" = "6.12.111-3"
           test "$(dpkg-deb --field build/output/znlite-kernel-6.12.111-amd64.deb Architecture)" = "amd64"
-          dpkg-deb --field build/output/znlite-kernel-6.12.111-amd64.deb Package | grep -E '^linux-image-6\.12\.111-znlite2$'
+          dpkg-deb --field build/output/znlite-kernel-6.12.111-amd64.deb Package | grep -E '^linux-image-6\.12\.111-znlite3$'
+
+          test "$(dpkg-deb --field build/output/znlite-kernel-headers-6.12.111-amd64.deb Version)" = "6.12.111-3"
+          dpkg-deb --field build/output/znlite-kernel-headers-6.12.111-amd64.deb Package | grep -E '^linux-headers-6\.12\.111-znlite3$'
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v6
         with:
-          name: znlite-x86_64-text-only
+          name: znlite-x86_64-aurora
           path: |
             build/output/znlite-live-x86_64.iso
             build/output/znlite-kernel-6.12.111-amd64.deb
+            build/output/znlite-kernel-headers-6.12.111-amd64.deb
             build/output/SHA256SUMS
             build/output/kernel.config
             build/output/kernel-audit.json

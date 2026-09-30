@@ -1,0 +1,17 @@
+#!/bin/sh
+set -eu
+# Existing ~/.config/sway/config wins; the shipped defaults never replace it.
+export XDG_CONFIG_DIRS="/etc/xdg/znlite:${XDG_CONFIG_DIRS:-/etc/xdg}"
+export XDG_CURRENT_DESKTOP=sway
+export XDG_SESSION_DESKTOP=sway
+export XDG_SESSION_TYPE=wayland
+export MOZ_ENABLE_WAYLAND=1
+if [ -f "${XDG_CONFIG_HOME:-$HOME/.config}/sway/config" ]; then
+    set -- sway "$@"
+else
+    set -- sway --config /etc/xdg/znlite/sway/config "$@"
+fi
+if [ -z "${DBUS_SESSION_BUS_ADDRESS:-}" ]; then
+    exec dbus-run-session -- "$@"
+fi
+exec "$@"

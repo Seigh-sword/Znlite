@@ -1,5 +1,5 @@
 label live-@FLAVOUR@
-    menu label ^Znlite Aurora - vector console
+    menu label ^Znlite Aurora - Wayland desktop
     menu default
     linux @LINUX@
     initrd @INITRD@
@@ -9,10 +9,10 @@ label live-@FLAVOUR@-raster
     menu label Znlite Aurora - ^raster rescue
     linux @LINUX@
     initrd @INITRD@
-    append @APPEND_LIVE@ znlite.console=raster
+    append @APPEND_LIVE@ znlite.console=raster systemd.unit=multi-user.target
 
 label live-@FLAVOUR@-failsafe
     menu label Znlite Aurora - ^safe mode
     linux @LINUX@
     initrd @INITRD@
-    append @APPEND_LIVE_FAILSAFE@ znlite.console=raster console=tty0 console=ttyS0,115200n8
+    append @APPEND_LIVE_FAILSAFE@ znlite.console=raster systemd.unit=multi-user.target console=tty0 console=ttyS0,115200n8

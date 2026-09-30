@@ -58,6 +58,9 @@ cd "$LIVE_BUILD_DIR"
 sudo lb config
 sudo lb bootstrap
 sudo lb chroot
+# After live-build has finalized its archive configuration, adopt ONLY its known
+# Debian sources. Installed-system boot selection never adopts arbitrary sources.
+sudo chroot chroot python3 -c 'import runpy; runpy.run_path("/usr/local/libexec/znlite-mirrors.py")["Manager"]().initialize_image()'
 if [ -e "chroot/boot/initrd.img-$KERNEL_RELEASE" ]; then
     sudo chroot chroot update-initramfs -u -k "$KERNEL_RELEASE"
 else
@@ -72,9 +75,15 @@ if [ -z "$ISO" ]; then
 fi
 cp "$ISO" "$OUTPUT_DIR/znlite-live-x86_64.iso"
 cp "$KERNEL_DEB" "$OUTPUT_DIR/znlite-kernel-6.12.111-amd64.deb"
+KERNEL_HEADERS=$(find "$SOURCE_PARENT" -maxdepth 1 -type f -name "linux-headers-${KERNEL_RELEASE}_*_amd64.deb" -print -quit)
+if [ -z "$KERNEL_HEADERS" ]; then
+    printf '%s\n' 'Missing matching kernel headers for driver/module customization.' >&2
+    exit 1
+fi
+cp "$KERNEL_HEADERS" "$OUTPUT_DIR/znlite-kernel-headers-6.12.111-amd64.deb"
 (
     cd "$OUTPUT_DIR"
-    sha256sum znlite-live-x86_64.iso znlite-kernel-6.12.111-amd64.deb kernel.config kernel-audit.json > SHA256SUMS
+    sha256sum znlite-live-x86_64.iso znlite-kernel-6.12.111-amd64.deb znlite-kernel-headers-6.12.111-amd64.deb kernel.config kernel-audit.json > SHA256SUMS
 )
 printf '%s\n' 'Znlite live ISO and custom kernel package built successfully.'
 printf 'ISO: %s\n' "$OUTPUT_DIR/znlite-live-x86_64.iso"

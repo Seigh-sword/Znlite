@@ -1,0 +1,14 @@
+{
+  "layer": "top",
+  "position": "top",
+  "height": 32,
+  "modules-left": ["custom/znlite", "sway/workspaces", "sway/mode"],
+  "modules-center": ["clock"],
+  "modules-right": ["network", "pulseaudio", "memory", "battery", "tray"],
+  "custom/znlite": {"format": "Z N", "tooltip": false, "on-click": "fuzzel"},
+  "clock": {"format": "{:%a  %d %b   %H:%M}"},
+  "network": {"format-wifi": "Wi-Fi {signalStrength}%", "format-ethernet": "LAN", "format-disconnected": "Offline", "on-click": "nm-connection-editor"},
+  "pulseaudio": {"format": "Vol {volume}%", "format-muted": "Muted", "on-click": "pavucontrol"},
+  "memory": {"format": "RAM {percentage}%", "interval": 10},
+  "battery": {"format": "BAT {capacity}%", "format-charging": "CHG {capacity}%", "states": {"warning": 25, "critical": 10}}
+}

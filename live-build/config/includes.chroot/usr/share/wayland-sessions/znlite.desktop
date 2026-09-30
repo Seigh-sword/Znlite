@@ -1,0 +1,6 @@
+[Desktop Entry]
+Name=Znlite Aurora (Sway)
+Comment=An editable lightweight Wayland session
+Exec=/usr/local/bin/znlite-session
+Type=Application
+DesktopNames=sway

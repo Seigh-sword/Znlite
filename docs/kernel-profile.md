@@ -1,3 +1,8 @@
+> **Historical profile:** this document describes the earlier laptop-only
+> revision 2. Revision 3 adds `kernel/platform.fragment` and restores broad
+> PC/VM support; see [the desktop profile](desktop-profile.md). The exclusions
+> and configuration counts below do not describe the current default image.
+
 # Znlite laptop kernel profile, revision 2
 
 This is a configuration of upstream Linux **6.12.111**, not an unreviewed source

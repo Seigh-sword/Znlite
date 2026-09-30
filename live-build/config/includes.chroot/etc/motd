@@ -1,9 +1,12 @@
-  Z N L I T E   /   A U R O R A
-  Small system. Bright ideas.
+  Z N L I T E  /  A U R O R A
+  Your desktop. Your rules.
 
-  znlite help          Discover your system
-  znfetch              System info + the cyan mascot
-  sudo znlite update   Review and install package updates
-  Ctrl+Alt+F2          Raster rescue console
+  Super+Return          Terminal       Super+D       Launcher
+  Super+Shift+C         Reload Sway    Ctrl+Alt+F2    Rescue console
+  znlite customize init                Make editable copies of defaults
+  znlite customize preset minimal      Reduce decoration
+  znlite mirror status                 Mirror measurements and ownership
+  znlite doctor                        Read-only system report
+  sudo znlite update                   Review package updates
 
-  Preview software. Back up your files before making changes.
+  Live changes need persistence or installation to survive a reboot.
